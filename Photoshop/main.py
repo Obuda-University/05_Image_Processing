@@ -19,8 +19,7 @@ class PhotoshopApplication(QMainWindow):
         self.create_toolbar()
 
     def create_toolbar(self) -> None:
-        main_toolbar = CustomToolBar(self)
-        self.addToolBar(main_toolbar)
+        CustomToolBar(self)
 
         """new_action.triggered.connect(self.new_file)
         open_action.triggered.connect(self.open_file)
