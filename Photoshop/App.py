@@ -44,6 +44,11 @@ class Application(QMainWindow):
         self.create_menu_items(file_menu, file_menu_actions)
         self.create_menu_items(edit_menu, edit_menu_actions)
 
+        # TODO: Add toolbar
+        # TODO: Add toolbar items (transformation, grayscale, other functionalities)
+        # TODO: Add Zoom functionality: selectable options with dropdown, but also editable with a number
+        # TODO: Add Zoom functionality: Ctrl + ScrollWheel Up / Down
+
     def create_menu_items(self, menu: QMenu, action_list: list[[(str, [str, None], str), None]]) -> None:
         """Helper function to add functions to a menu"""
         for i in action_list:
@@ -56,6 +61,8 @@ class Application(QMainWindow):
                     act.setShortcut(shortcut)
                 act.triggered.connect(callback)
                 menu.addAction(act)
+
+    # TODO: Make functions
 
     def new(self) -> None:
         print("New File Created!")
