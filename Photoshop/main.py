@@ -1,8 +1,21 @@
+import copy
+
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QIcon
-from PyQt6.QtWidgets import QApplication, QMainWindow, QMenu, QWidget, QLabel, QPushButton, QVBoxLayout
+from PyQt6.QtGui import QAction, QIcon, QImage, QPixmap
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QMenu, QWidget, QLabel, QPushButton, QVBoxLayout, QMessageBox, QFileDialog
+)
 import cv2
 import numpy as np
+
+
+class AppState:
+    """To store the state of the application"""
+    def __init__(self, app: "PhotoshopApplication") -> None:
+        self.image = copy.deepcopy(app.image)
+        self.radius = app.radius
+        self.sample_radius = app.sample_radius
+        self.opacity = app.opacity
 
 
 class PhotoshopApplication(QMainWindow):
