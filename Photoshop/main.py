@@ -88,30 +88,74 @@ class PhotoshopApplication(QMainWindow):
         self.image_item = QGraphicsPixmapItem()
         self.scene.addItem(self.image_item)
 
-        self.radius_slider_layout = QHBoxLayout()
-        self.radius_slider = QSlider(Qt.Orientation.Horizontal)
-        self.radius_slider.setRange(1, 50)
-        self.radius_slider.setValue(self.radius)
-        self.radius_slider.valueChanged.connect(self.radiusChanged)
+        # menu bar
+        menuBar = self.menuBar()
+        menuBar.setStyleSheet("font-size: 15px")
 
-        self.radius_label = QLabel(f"Radius ({self.radius})")
+        fileMenu = menuBar.addMenu("&File")
+        editMenu = menuBar.addMenu("&Edit")
 
-        self.radius_slider_layout.addWidget(self.radius_label)
-        self.radius_slider_layout.addWidget(self.radius_slider)
+        load_act = QAction("Load Image", self)
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DirHomeIcon)
+        load_act.setIcon(icon)
+        load_act.setStatusTip("Load an Image")
+        load_act.triggered.connect(self.load_image)
+        fileMenu.addAction(load_act)
 
-        self.sample_slider_layout = QHBoxLayout()
-        self.sample_slider = QSlider(Qt.Orientation.Horizontal)
-        self.sample_slider.setRange(1, 50)
-        self.sample_slider.setValue(self.sample_radius)
-        self.sample_slider.valueChanged.connect(self.sampleChanged)
+        undo_act = QAction("Undo", self)
+        undo_act.setStatusTip("Undo")
+        undo_act.triggered.connect(self.load_last_state)
+        editMenu.addAction(undo_act)
 
-        self.sample_label = QLabel(f"Sample Radius (Higher is slower) ({self.sample_radius})")
+        save_act = QAction("Save", self)
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton)
+        save_act.setIcon(icon)
+        save_act.triggered.connect(self.saveImage)
+        fileMenu.addAction(save_act)
 
-    def radiusChanged(self) -> None:
-        pass
+    def load_image(self):
+        file_dialog = QFileDialog()
+        file_path, _ = file_dialog.getOpenFileName(
+            self, "Open Image", "", "Image Files (*.png *.jpg *.bmp)"
+        )
+        if file_path:
+            self.image = cv2.imread(file_path)
+            self.updateImageLabel()
+            self.image_view.fitInView(
+            self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio
+            )
+            self.save_state()
 
-    def sampleChanged(self) -> None:
-        pass
+    def updateImageLabel(self):
+        if self.image is not None:
+            colored_img = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+            qt_img = QImage(
+                colored_img.data, colored_img.shape[1], colored_img.shape[0],
+                colored_img.shape[1] * 3, QImage.Format.Format_RGB888
+            )
+            pixmap = QPixmap.fromImage(qt_img)
+            self.image_item.setPixmap(pixmap)
+
+    def load_last_state(self):
+        if len(self.history) == 0:
+            return
+
+        state: AppState = self.history.pop()
+        self.image = state.image
+        self.radius = state.radius
+        self.opacity = state.opacity
+        self.sample_radius = state.sample_radius
+        self.updateImageLabel()
+        self.update()
+
+    def save_state(self):
+        state = AppState(self)
+        self.history.append(state)
+
+    def saveImage(self):
+        file, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "Image Files (*.png *.jpg *.bmp)")
+        if file:
+            cv2.imwrite(file, self.image)
 
     def mousePressEventIMG(self, event) -> None:
         pass
