@@ -56,8 +56,6 @@ class PhotoshopApplication(QMainWindow):
 
         self.main_layout = QVBoxLayout(self.central_widget)
 
-        self.menubar = self.menuBar()
-
         # IMAGE VIEW
         self.image_view = QGraphicsView(self)
         self.image_view.setFixedSize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
