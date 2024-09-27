@@ -63,19 +63,13 @@ class PhotoshopApplication(QMainWindow):
         self.image_view.setFixedSize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
         self.image_view.setRenderHint(QPainter.RenderHint.Antialiasing)
         # events
-        self.image_view.mousePressEvent = self.mousePressEventIMG
-        self.image_view.mouseMoveEvent = self.mouseMoveEventIMG
-        self.image_view.mouseReleaseEvent = self.mouseReleaseEventIMG
-        self.image_view.wheelEvent = self.wheelEventIMG
         # dragging
         self.image_view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
         # zooming settings
         self.image_view.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.image_view.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-
         self.image_view.setStyleSheet("border: none;")
         self.image_view.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
-        # self.image_view.setCursor(self.round_cursor)
 
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidget(self.image_view)
@@ -110,8 +104,12 @@ class PhotoshopApplication(QMainWindow):
         save_act = QAction("Save", self)
         icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton)
         save_act.setIcon(icon)
-        save_act.triggered.connect(self.saveImage)
+        save_act.triggered.connect(self.save_image)
         fileMenu.addAction(save_act)
+
+    def is_inside_image(self, x, y):
+        """Checks if pressed position is inside images bounds"""
+        return 0 <= x < self.image.shape[1] and 0 <= y < self.image.shape[0]
 
     def load_image(self):
         file_dialog = QFileDialog()
@@ -120,13 +118,11 @@ class PhotoshopApplication(QMainWindow):
         )
         if file_path:
             self.image = cv2.imread(file_path)
-            self.updateImageLabel()
-            self.image_view.fitInView(
-            self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio
-            )
+            self.update_image_label()
+            self.image_view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
             self.save_state()
 
-    def updateImageLabel(self):
+    def update_image_label(self):
         if self.image is not None:
             colored_img = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
             qt_img = QImage(
@@ -145,29 +141,17 @@ class PhotoshopApplication(QMainWindow):
         self.radius = state.radius
         self.opacity = state.opacity
         self.sample_radius = state.sample_radius
-        self.updateImageLabel()
+        self.update_image_label()
         self.update()
 
     def save_state(self):
         state = AppState(self)
         self.history.append(state)
 
-    def saveImage(self):
+    def save_image(self):
         file, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "Image Files (*.png *.jpg *.bmp)")
         if file:
             cv2.imwrite(file, self.image)
-
-    def mousePressEventIMG(self, event) -> None:
-        pass
-
-    def mouseMoveEventIMG(self, event) -> None:
-        pass
-
-    def mouseReleaseEventIMG(self, event) -> None:
-        pass
-
-    def wheelEventIMG(self, evebt) -> None:
-        pass
 
 
 if __name__ == '__main__':
