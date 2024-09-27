@@ -1,6 +1,6 @@
 import sys
-from PyQt6.QtGui import QPixmap, QAction
-from PyQt6.QtWidgets import QMainWindow, QApplication, QLabel, QMenu
+from PyQt6.QtGui import QPixmap, QAction, QIcon
+from PyQt6.QtWidgets import QMainWindow, QApplication, QLabel, QMenu, QMenuBar
 
 
 class Application(QMainWindow):
@@ -18,10 +18,13 @@ class Application(QMainWindow):
         menubar = self.menuBar()
         file_menu = menubar.addMenu("&File")
         edit_menu = menubar.addMenu("&Edit")
-        # TODO: Add extra icon for saving the file
-        # TODO: Add extra icon for undoing (<-)
-        # TODO: Add extra icon for redoing (->)
-        # TODO: Add checkbox to disable toolbar
+
+        # Actions for the main menu
+        main_menu_actions: list[[(str, [str, None], str), None]] = [
+            (QIcon.fromTheme("document-save"), None, self.save),
+            (QIcon.fromTheme("edit-undo"), None, self.undo),
+            (QIcon.fromTheme("edit-redo"), None, self.redo),
+        ]
 
         # Actions for the file menu
         file_menu_actions: list[[(str, [str, None], str), None]] = [
@@ -43,26 +46,35 @@ class Application(QMainWindow):
 
         self.create_menu_items(file_menu, file_menu_actions)
         self.create_menu_items(edit_menu, edit_menu_actions)
+        self.create_menu_items(menubar, main_menu_actions)
 
         # TODO: Add toolbar
         # TODO: Add toolbar items (transformation, grayscale, other functionalities)
         # TODO: Add Zoom functionality: selectable options with dropdown, but also editable with a number
         # TODO: Add Zoom functionality: Ctrl + ScrollWheel Up / Down
 
-    def create_menu_items(self, menu: QMenu, action_list: list[[(str, [str, None], str), None]]) -> None:
+    def create_menu_items(self, menu: [QMenu, QMenuBar], action_list: list[[(str, [str, None], str), None]]) -> None:
         """Helper function to add functions to a menu"""
         for i in action_list:
             if i is None:
                 menu.addSeparator()
             else:
                 text, shortcut, callback = i
-                act = QAction(text, self)
-                if shortcut:
-                    act.setShortcut(shortcut)
+                if isinstance(text, str) and text != "":
+                    act = QAction(text, self)
+                    if shortcut:
+                        act.setShortcut(shortcut)
+                else:
+                    act = QAction(text, "", self)
                 act.triggered.connect(callback)
                 menu.addAction(act)
 
     # TODO: Make functions
+    def undo(self) -> None:
+        print("Undo!")
+
+    def redo(self) -> None:
+        print("Redo!")
 
     def new(self) -> None:
         print("New File Created!")
