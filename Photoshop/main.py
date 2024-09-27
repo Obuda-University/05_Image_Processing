@@ -1,12 +1,14 @@
 import copy
+import sys
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QIcon, QImage, QPixmap
+from PyQt6.QtGui import QAction, QIcon, QImage, QPixmap, QPainter, QShortcut, QKeySequence
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QMenu, QWidget, QLabel, QPushButton, QVBoxLayout, QMessageBox, QFileDialog
+    QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QMessageBox, QFileDialog, QGraphicsView, QScrollArea,
+    QGraphicsScene, QGraphicsPixmapItem, QHBoxLayout, QSlider, QStyle
 )
 import cv2
-import numpy as np
+# import numpy as np
 
 
 class AppState:
@@ -21,147 +23,111 @@ class AppState:
 class PhotoshopApplication(QMainWindow):
     def __init__(self) -> None:
         super(PhotoshopApplication, self).__init__()
+
         self.WINDOW_WIDTH: int = 1000
         self.WINDOW_HEIGHT: int = 800
         self.WINDOW_TITLE: str = "Photoshop App"
         self.WINDOW_ICON: str = "Resources\\icon2.png"
 
-        self.setWindowTitle(self.WINDOW_TITLE)
-        self.resize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
-        self.setWindowIcon(QIcon(self.WINDOW_ICON))
+        self.image = None
+        self.healing_brush_active = False
+        self.radius = 15
+        self.sample_radius = 5
+        self.zoom_level = 0
+        self.opacity = 0.2
+        self.history = []
 
-        self.create_menu()
-        self.create_main_widget()
+        self.space_pressed = False
+        self.last_cursor_pos = None
+        self.dragging = False
+
+        # self.round_cursor = self.create_round_cursor(self.radius)
+        self.initUI()
 
         self.image = None
 
-    def create_menu(self) -> None:
+    def initUI(self) -> None:
+        self.setWindowTitle(self.WINDOW_TITLE)
+        self.setFixedSize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+        self.setWindowIcon(QIcon(self.WINDOW_ICON))
+
+        self.central_widget = QWidget(self)
+        self.setCentralWidget(self.central_widget)
+
+        self.main_layout = QVBoxLayout(self.central_widget)
+
         self.menubar = self.menuBar()
 
-        # Define Menu Titles
-        menu_transformations = self.menubar.addMenu("&Transformations")
-        menu_histograms = self.menubar.addMenu("&Histograms")
-        menu_filters = self.menubar.addMenu("&Filters")
-        menu_edges = self.menubar.addMenu("&Edge Detections")
-        menu_file = self.menubar.addMenu("&File Operations")
+        # IMAGE VIEW
+        self.image_view = QGraphicsView(self)
+        self.image_view.setFixedSize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+        self.image_view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        # events
+        self.image_view.mousePressEvent = self.mousePressEventIMG
+        self.image_view.mouseMoveEvent = self.mouseMoveEventIMG
+        self.image_view.mouseReleaseEvent = self.mouseReleaseEventIMG
+        self.image_view.wheelEvent = self.wheelEventIMG
+        # dragging
+        self.image_view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
+        # zooming settings
+        self.image_view.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.image_view.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
 
-        # Create actions
-        act_negate = QAction("Negate", self)
-        act_grayscale = QAction("Grayscale", self)
-        act_gamma_transform = QAction("Gamma Transformation", self)
-        act_log_transform = QAction("Logarithmic Transformation", self)
-        act_histogram_create = QAction("Create Histogram", self)
-        act_histogram_equalization = QAction("Histogram Equalization", self)
-        act_box_filter = QAction("Box Filter", self)
-        act_gauss_filter = QAction("Gauss Filter", self)
-        act_sobel_edge_detection = QAction("Sobel Edge Detection", self)
-        act_laplace_edge_detection = QAction("Laplace Edge Detection", self)
-        act_point_detection = QAction("Point Detection", self)
-        act_open_file = QAction("Open File", self)
-        act_reset_to_default = QAction("Reset to Default", self)
-        act_save_file = QAction("Save", self)
+        self.image_view.setStyleSheet("border: none;")
+        self.image_view.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
+        # self.image_view.setCursor(self.round_cursor)
 
-        # Connect actions to functions
-        act_open_file.triggered.connect(self.open_file)
-        act_save_file.triggered.connect(self.save_file)
-        act_negate.triggered.connect(self.negate_image)
-        act_grayscale.triggered.connect(self.grayscale_image)
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setWidget(self.image_view)
 
-        # Add actions to menus
-        menu_transformations.addAction(act_gamma_transform)
-        menu_transformations.addAction(act_log_transform)
-        menu_histograms.addAction(act_histogram_create)
-        menu_histograms.addAction(act_histogram_equalization)
-        menu_filters.addAction(act_box_filter)
-        menu_filters.addAction(act_gauss_filter)
-        menu_edges.addAction(act_sobel_edge_detection)
-        menu_edges.addAction(act_laplace_edge_detection)
-        menu_edges.addAction(act_point_detection)
-        menu_file.addAction(act_open_file)
-        menu_file.addAction(act_reset_to_default)
-        menu_file.addAction(act_save_file)
+        self.main_layout.addWidget(self.scroll_area)
 
-    def create_main_widget(self) -> None:
-        self.main_widget = QWidget()
-        self.setCentralWidget(self.main_widget)
+        self.scene = QGraphicsScene()
+        self.image_view.setScene(self.scene)
 
-        self.image_label = QLabel(self)
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setText("Drag and drop an image here or use the 'Open File' menu")
+        self.image_item = QGraphicsPixmapItem()
+        self.scene.addItem(self.image_item)
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.image_label)
-        self.main_widget.setLayout(layout)
+        self.radius_slider_layout = QHBoxLayout()
+        self.radius_slider = QSlider(Qt.Orientation.Horizontal)
+        self.radius_slider.setRange(1, 50)
+        self.radius_slider.setValue(self.radius)
+        self.radius_slider.valueChanged.connect(self.radiusChanged)
 
-        # Enable drag and drop
-        self.setAcceptDrops(True)
+        self.radius_label = QLabel(f"Radius ({self.radius})")
 
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasImage:
-            event.accept()
-        else:
-            event.ignore()
+        self.radius_slider_layout.addWidget(self.radius_label)
+        self.radius_slider_layout.addWidget(self.radius_slider)
 
-    def dropEvent(self, event):
-        if event.mimeData().hasImage:
-            event.setDropAction(Qt.DropAction.CopyAction)
-            file_path = event.mimeData().urls()[0].toLocalFile()
-            self.load_image(file_path)
-            event.accept()
-        else:
-            event.ignore()
+        self.sample_slider_layout = QHBoxLayout()
+        self.sample_slider = QSlider(Qt.Orientation.Horizontal)
+        self.sample_slider.setRange(1, 50)
+        self.sample_slider.setValue(self.sample_radius)
+        self.sample_slider.valueChanged.connect(self.sampleChanged)
 
-    def open_file(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open Image", "", "Image Files (*.png *.jpg *.bmp)")
-        if file_path:
-            self.load_image(file_path)
+        self.sample_label = QLabel(f"Sample Radius (Higher is slower) ({self.sample_radius})")
 
-    def load_image(self, file_path: str) -> None:
-        self.image = cv2.imread(file_path)
-        if self.image is not None:
-            self.display_image()
-        else:
-            QMessageBox.critical(self, "Error", "Unable to load the image.")
+    def radiusChanged(self) -> None:
+        pass
 
-    def display_image(self) -> None:
-        height, width = self.image.shape[:2]
-        bytes_per_line = 3 * width
-        q_image = QImage(self.image.data, width, height, bytes_per_line, QImage.Format.Format_RGB888).rgbSwapped()
-        pixmap = QPixmap.fromImage(q_image)
-        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.AspectRatioMode.KeepAspectRatio,
-                                                 Qt.TransformationMode.SmoothTransformation))
+    def sampleChanged(self) -> None:
+        pass
 
-    def save_file(self) -> None:
-        if self.image is not None:
-            file_path, _ = QFileDialog.getSaveFileName(self, "Save Image", "",
-                                                       "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)")
-            if file_path:
-                cv2.imwrite(file_path, self.image)
-        else:
-            QMessageBox.warning(self, "Warning", "No image to save.")
+    def mousePressEventIMG(self, event) -> None:
+        pass
 
-    def negate_image(self) -> None:
-        if self.image is not None:
-            self.image = cv2.bitwise_not(self.image)
-            self.display_image()
-        else:
-            QMessageBox.warning(self, "Warning", "No image loaded.")
+    def mouseMoveEventIMG(self, event) -> None:
+        pass
 
-    def grayscale_image(self) -> None:
-        if self.image is not None:
-            self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
-            self.image = cv2.cvtColor(self.image, cv2.COLOR_GRAY2BGR)  # Convert back to 3 channels
-            self.display_image()
-        else:
-            QMessageBox.warning(self, "Warning", "No image loaded.")
+    def mouseReleaseEventIMG(self, event) -> None:
+        pass
 
-
-def run_application() -> None:
-    app = QApplication([])
-    main_window = PhotoshopApplication()
-    main_window.show()
-    app.exec()
+    def wheelEventIMG(self, evebt) -> None:
+        pass
 
 
 if __name__ == '__main__':
-    run_application()
+    app = QApplication(sys.argv)
+    main_window = PhotoshopApplication()
+    main_window.show()
+    sys.exit(app.exec())
