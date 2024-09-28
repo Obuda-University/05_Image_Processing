@@ -1,23 +1,30 @@
 import sys
-from PyQt6.QtGui import QPixmap, QAction, QIcon
-from PyQt6.QtWidgets import QMainWindow, QApplication, QLabel, QMenu, QMenuBar
+from Qt import QtCore
+from CustomView import CustomView
+from PyQt6.QtGui import QPixmap, QAction, QIcon, QWheelEvent
+from PyQt6.QtWidgets import QMainWindow, QApplication, QMenu, QMenuBar, QLabel, QComboBox, QGraphicsScene
 
 
 class Application(QMainWindow):
     def __init__(self) -> None:
         super(Application, self).__init__()
-        self.title = "Photoshop Application"
-        self.setWindowTitle(self.title)
+        self.setWindowTitle("Photoshop Application")
+        self.setWindowIcon(QIcon("Resources/icon.png"))
 
-        label = QLabel(self)
-        pixmap = QPixmap("Resources/icon.png")
-        label.setPixmap(pixmap)
-        self.setCentralWidget(label)
-        self.resize(pixmap.width(), pixmap.height())
+        # Create the graphic scene
+        self.scene = QGraphicsScene(self)
+        self.view = CustomView(self.scene, self)
+        self.setCentralWidget(self.view)
 
-        menubar = self.menuBar()
-        file_menu = menubar.addMenu("&File")
-        edit_menu = menubar.addMenu("&Edit")
+        # Load the image and add it to the scene
+        self.image = QPixmap("Resources/icon.png")
+        self.scene.addPixmap(self.image)
+        self.view.setScene(self.scene)
+        self.view.setSceneRect(self.image.rect().adjusted(0, 0, 0, 0).toRectF())
+
+        main_menubar = self.menuBar()
+        file_menu = main_menubar.addMenu("&File")
+        edit_menu = main_menubar.addMenu("&Edit")
 
         # Actions for the main menu
         main_menu_actions: list[[(str, [str, None], str), None]] = [
@@ -46,9 +53,9 @@ class Application(QMainWindow):
 
         self.create_menu_items(file_menu, file_menu_actions)
         self.create_menu_items(edit_menu, edit_menu_actions)
-        self.create_menu_items(menubar, main_menu_actions)
+        self.create_menu_items(main_menubar, main_menu_actions)
 
-        # TODO: Add toolbar
+
         # TODO: Add toolbar items (transformation, grayscale, other functionalities)
         # TODO: Add Zoom functionality: selectable options with dropdown, but also editable with a number
         # TODO: Add Zoom functionality: Ctrl + ScrollWheel Up / Down
@@ -70,6 +77,10 @@ class Application(QMainWindow):
                 menu.addAction(act)
 
     # TODO: Make functions
+    def on_zoom_changed(self, text: str) -> None:
+        zoom_factor = int(text.strip('%')) / 100.0
+        self.view.set_zoom(zoom_factor)
+
     def undo(self) -> None:
         print("Undo!")
 
@@ -99,6 +110,12 @@ class Application(QMainWindow):
 
     def paste(self) -> None:
         print("File Pasted!")
+
+    def grayscale(self) -> None:
+        pass
+
+    def rotate(self) -> None:
+        pass
 
 
 if __name__ == '__main__':
