@@ -16,6 +16,9 @@ class Application(QMainWindow):
         self.view = CustomView(self.scene, self)
         self.setCentralWidget(self.view)
 
+        # Connect to the zoom_changed signal
+        self.view.zoom_changed.connect(self.update_zoom_combobox)
+
         # Load the image and add it to the scene
         self.image = QPixmap("Resources/icon.png")
         self.scene.addPixmap(self.image)
@@ -55,6 +58,28 @@ class Application(QMainWindow):
         self.create_menu_items(edit_menu, edit_menu_actions)
         self.create_menu_items(main_menubar, main_menu_actions)
 
+        main_toolbar = self.addToolBar("Main Toolbar")
+
+        zoom_label = QLabel("Zoom:")
+        main_toolbar.addWidget(zoom_label)
+
+        self.zoom_combobox = QComboBox()
+        self.zoom_combobox.setFixedWidth(70)
+        self.zoom_combobox.setEditable(True)
+        self.zoom_combobox.addItems(["50%", "75%", "100%", "200%", "300%", "400%", "500%", "600%", "700%", "800%"])
+        self.zoom_combobox.setCurrentText("100%")
+        self.zoom_combobox.currentTextChanged.connect(self.on_zoom_changed)
+        main_toolbar.addWidget(self.zoom_combobox)
+
+        grayscale_action = QAction("Grayscale", self)
+        main_toolbar.addAction(grayscale_action)
+        grayscale_action.triggered.connect(self.grayscale)
+
+        rotate_action = QAction("Rotate", self)
+        main_toolbar.addAction(rotate_action)
+        rotate_action.triggered.connect(self.rotate)
+
+        self.setMouseTracking(True)
 
         # TODO: Add toolbar items (transformation, grayscale, other functionalities)
         # TODO: Add Zoom functionality: selectable options with dropdown, but also editable with a number
@@ -78,8 +103,18 @@ class Application(QMainWindow):
 
     # TODO: Make functions
     def on_zoom_changed(self, text: str) -> None:
-        zoom_factor = int(text.strip('%')) / 100.0
-        self.view.set_zoom(zoom_factor)
+        try:
+            zoom_value = int(text.strip('%'))
+            if 10 > zoom_value > 800:
+                raise ValueError
+            self.view.set_zoom(zoom_value / 100.0)
+        except ValueError:
+            self.zoom_combobox.setCurrentText("100%")
+
+    def update_zoom_combobox(self, zoom_factor: float) -> None:
+        """Update the zoom combobox based on the zoom_factor from the CustomView"""
+        zoom_percentage = int(zoom_factor * 100)
+        self.zoom_combobox.setCurrentText(f"{zoom_percentage}%")
 
     def undo(self) -> None:
         print("Undo!")
