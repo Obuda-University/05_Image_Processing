@@ -2,7 +2,7 @@ import sys
 from CustomView import CustomView
 from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel,
-                             QComboBox, QGraphicsScene, QToolButton, QMessageBox)
+                             QComboBox, QGraphicsScene, QToolButton, QMessageBox, QFileDialog)
 
 
 class Application(QMainWindow):
@@ -14,20 +14,16 @@ class Application(QMainWindow):
         # Create the graphic scene
         self.scene = QGraphicsScene(self)
         self.view = CustomView(self.scene, self)
+        self.view.setScene(self.scene)
         self.setCentralWidget(self.view)
 
         # Functionalities
+        self.image = None
         self.undo_stack = QUndoStack(self)
         self.clipboard = QApplication.clipboard()
 
         # Connect to the zoom_changed signal
         self.view.zoom_changed.connect(self.update_zoom_combobox)
-
-        # Load the image and add it to the scene
-        self.image = QPixmap("Resources/icon.png")
-        self.scene.addPixmap(self.image)
-        self.view.setScene(self.scene)
-        self.view.setSceneRect(self.image.rect().adjusted(0, 0, 0, 0).toRectF())
 
         main_menubar = self.menuBar()
         file_menu = main_menubar.addMenu("&File")
@@ -170,7 +166,13 @@ class Application(QMainWindow):
         self.image = None
 
     def open(self) -> None:
-        print("File Opened!")
+        """Opens an image file and loads it into the scene"""
+        filename, _ = QFileDialog.getOpenFileName(self, "Open Image", "", "Images (*.png *.xpm *.jpg *.jpeg *.bmp)")
+        if filename:
+            self.image = QPixmap(filename)
+            self.scene.clear()
+            self.scene.addPixmap(self.image)
+            self.view.setSceneRect(self.image.rect().adjusted(0, 0, 0, 0).toRectF())
 
     def save(self) -> None:
         print("File Saved!")
