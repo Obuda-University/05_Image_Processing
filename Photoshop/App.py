@@ -7,7 +7,13 @@ from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBa
 
 class Application(QMainWindow):
     def __init__(self) -> None:
+        self.WINDOW_WIDTH: int = 1000
+        self.WINDOW_HEIGHT: int = 700
+        self.image: [QPixmap, None] = None
+        self.toolbar_menus: dict = {}
+
         super(Application, self).__init__()
+        self.resize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
         self.setWindowTitle("Photoshop Application")
         self.setWindowIcon(QIcon("Resources/icon.png"))
 
@@ -18,7 +24,6 @@ class Application(QMainWindow):
         self.setCentralWidget(self.view)
 
         # Functionalities
-        self.image = None
         self.undo_stack = QUndoStack(self)
         self.clipboard = QApplication.clipboard()
 
@@ -72,8 +77,6 @@ class Application(QMainWindow):
         main_toolbar.addWidget(self.zoom_combobox)
 
         # Create toolbar actions
-        self.toolbar_menus: dict = {}
-
         self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Right 90°", self.rotate_right)
         self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Right 90°", self.rotate_left)
         self.create_toolbar_action_items(main_toolbar, None, "Negate", self.negate)
