@@ -1,8 +1,8 @@
 import sys
 from CustomView import CustomView
-from PyQt6.QtGui import QPixmap, QAction, QIcon
+from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel,
-                             QComboBox, QGraphicsScene, QToolButton)
+                             QComboBox, QGraphicsScene, QToolButton, QMessageBox)
 
 
 class Application(QMainWindow):
@@ -15,6 +15,10 @@ class Application(QMainWindow):
         self.scene = QGraphicsScene(self)
         self.view = CustomView(self.scene, self)
         self.setCentralWidget(self.view)
+
+        # Functionalities
+        self.undo_stack = QUndoStack(self)
+        self.clipboard = QApplication.clipboard()
 
         # Connect to the zoom_changed signal
         self.view.zoom_changed.connect(self.update_zoom_combobox)
@@ -90,10 +94,6 @@ class Application(QMainWindow):
 
         self.setMouseTracking(True)
 
-        # TODO: Add toolbar items (transformation, grayscale, other functionalities)
-        # TODO: Add Zoom functionality: selectable options with dropdown, but also editable with a number
-        # TODO: Add Zoom functionality: Ctrl + ScrollWheel Up / Down
-
     def create_menu_items(self, menu: [QMenu, QMenuBar], action_list: list[[(str, [str, None], str), None]]) -> None:
         """Helper function to add functions to a menu"""
         for i in action_list:
@@ -148,6 +148,7 @@ class Application(QMainWindow):
         """Update the zoom combobox based on the zoom_factor from the CustomView"""
         zoom_percentage = int(zoom_factor * 100)
         self.zoom_combobox.setCurrentText(f"{zoom_percentage}%")
+
 # region MenuBar Buttons
     def undo(self) -> None:
         print("Undo!")
@@ -156,7 +157,17 @@ class Application(QMainWindow):
         print("Redo!")
 
     def new(self) -> None:
-        print("New File Created!")
+        """Creates a new file by clearing the current scene"""
+        reply = QMessageBox.question(self, 'Unsaved Work', "Do you want to save changes before creating a new file?",
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No |
+                                     QMessageBox.StandardButton.Cancel)
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.save()
+        elif reply == QMessageBox.StandardButton.Cancel:
+            return
+        self.scene.clear()
+        self.image = None
 
     def open(self) -> None:
         print("File Opened!")
