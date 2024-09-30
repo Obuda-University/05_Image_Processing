@@ -38,8 +38,8 @@ class Application(QMainWindow):
         # Actions for the main menu
         main_menu_actions: list[[(str, [str, None], str), None]] = [
             (QIcon.fromTheme("document-save"), None, self.save),
-            (QIcon.fromTheme("edit-undo"), None, self.undo),
-            (QIcon.fromTheme("edit-redo"), None, self.redo),
+            (QIcon.fromTheme("edit-undo"), "Ctrl+Z", self.undo),
+            (QIcon.fromTheme("edit-redo"), "Ctrl+Y", self.redo),
         ]
 
         # Actions for the file menu
@@ -103,10 +103,10 @@ class Application(QMainWindow):
                 text, shortcut, callback = i
                 if isinstance(text, str) and text != "":
                     act = QAction(text, self)
-                    if shortcut:
-                        act.setShortcut(shortcut)
                 else:
                     act = QAction(text, "", self)
+                if shortcut:
+                    act.setShortcut(shortcut)
                 act.triggered.connect(callback)
                 menu.addAction(act)
 
@@ -150,11 +150,14 @@ class Application(QMainWindow):
         self.zoom_combobox.setCurrentText(f"{zoom_percentage}%")
 
 # region MenuBar Buttons
+    # TODO: add actions to the todo stack
     def undo(self) -> None:
-        print("Undo!")
+        self.undo_stack.undo()
+        print("undo")
 
     def redo(self) -> None:
-        print("Redo!")
+        self.undo_stack.redo()
+        print("redo")
 
     def new(self) -> None:
         """Creates a new file by clearing the current scene"""
@@ -202,7 +205,7 @@ class Application(QMainWindow):
         elif reply == QMessageBox.StandardButton.Cancel:
             return
         QApplication.quit()
-
+    # TODO: add selected item for the application
     def cut(self) -> None:
         """Cuts the selected item to the clipboard"""
         selected_items = self.scene.selectedItems()
