@@ -1,8 +1,8 @@
 import sys
-from Qt import QtCore
 from CustomView import CustomView
-from PyQt6.QtGui import QPixmap, QAction, QIcon, QWheelEvent
-from PyQt6.QtWidgets import QMainWindow, QApplication, QMenu, QMenuBar, QLabel, QComboBox, QGraphicsScene
+from PyQt6.QtGui import QPixmap, QAction, QIcon
+from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel,
+                             QComboBox, QGraphicsScene, QToolButton)
 
 
 class Application(QMainWindow):
@@ -71,13 +71,22 @@ class Application(QMainWindow):
         self.zoom_combobox.currentTextChanged.connect(self.on_zoom_changed)
         main_toolbar.addWidget(self.zoom_combobox)
 
-        grayscale_action = QAction("Grayscale", self)
-        main_toolbar.addAction(grayscale_action)
-        grayscale_action.triggered.connect(self.grayscale)
+        # Create toolbar actions
+        self.toolbar_menus: dict = {}
 
-        rotate_action = QAction("Rotate", self)
-        main_toolbar.addAction(rotate_action)
-        rotate_action.triggered.connect(self.rotate)
+        self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Right 90°", self.rotate_right)
+        self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Right 90°", self.rotate_left)
+        self.create_toolbar_action_items(main_toolbar, None, "Negate", self.negate)
+        self.create_toolbar_action_items(main_toolbar, None, "Grayscale", self.grayscale)
+        self.create_toolbar_action_items(main_toolbar, "Transformations", "Gamma Transformation", self.trans_gamma)
+        self.create_toolbar_action_items(main_toolbar, "Transformations", "Logarithmic Transformation", self.trans_log)
+        self.create_toolbar_action_items(main_toolbar, "Histograms", "Create Histogram", self.hist_create)
+        self.create_toolbar_action_items(main_toolbar, "Histograms", "Equalize Histogram", self.hist_eq)
+        self.create_toolbar_action_items(main_toolbar, "Filters", "Box Filter", self.filter_box)
+        self.create_toolbar_action_items(main_toolbar, "Filters", "Gauss Filter", self.filter_gauss)
+        self.create_toolbar_action_items(main_toolbar, "Edge Detections", "Sobel Edge Detection", self.edge_sobel)
+        self.create_toolbar_action_items(main_toolbar, "Edge Detections", "Laplace Edge Detection", self.edge_laplace)
+        self.create_toolbar_action_items(main_toolbar, None, "Characteristic Point Detection", self.point)
 
         self.setMouseTracking(True)
 
@@ -101,6 +110,30 @@ class Application(QMainWindow):
                 act.triggered.connect(callback)
                 menu.addAction(act)
 
+    def create_toolbar_action_items(self, toolbar: QToolBar, menu_name: [str, None],
+                                    action_name: str, action: callable) -> None:
+        """Helper function to add buttons to the toolbar and create menus"""
+        q_action = QAction(action_name, self)
+        q_action.triggered.connect(action)
+
+        if not menu_name:
+            toolbar.addAction(q_action)
+        else:
+            if menu_name in self.toolbar_menus:
+                menu_button = self.toolbar_menus[menu_name]
+                menu_button.menu().addAction(q_action)
+            else:
+                menu = QMenu()
+                menu.addAction(q_action)
+
+                menu_button = QToolButton()
+                menu_button.setText(menu_name)
+                menu_button.setMenu(menu)
+                menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+
+                toolbar.addWidget(menu_button)
+                self.toolbar_menus[menu_name] = menu_button
+
     # TODO: Make functions
     def on_zoom_changed(self, text: str) -> None:
         try:
@@ -115,7 +148,7 @@ class Application(QMainWindow):
         """Update the zoom combobox based on the zoom_factor from the CustomView"""
         zoom_percentage = int(zoom_factor * 100)
         self.zoom_combobox.setCurrentText(f"{zoom_percentage}%")
-
+# region MenuBar Buttons
     def undo(self) -> None:
         print("Undo!")
 
@@ -145,11 +178,50 @@ class Application(QMainWindow):
 
     def paste(self) -> None:
         print("File Pasted!")
+# endregion
+
+# region ToolBar Buttons
+    def negate(self) -> None:
+        pass
 
     def grayscale(self) -> None:
         pass
 
-    def rotate(self) -> None:
+    def trans_gamma(self) -> None:
+        pass
+
+    def trans_log(self) -> None:
+        pass
+
+    def hist_create(self) -> None:
+        pass
+
+    def hist_eq(self) -> None:
+        pass
+
+    def filter_box(self) -> None:
+        pass
+
+    def filter_gauss(self) -> None:
+        pass
+
+    def edge_sobel(self) -> None:
+        pass
+
+    def edge_laplace(self) -> None:
+        pass
+
+    def point(self) -> None:
+        pass
+
+    def rotate_right(self) -> None:
+        pass
+
+    def rotate_left(self) -> None:
+        pass
+# endregion
+
+    def holder(self) -> None:
         pass
 
 
