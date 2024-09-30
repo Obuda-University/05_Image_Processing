@@ -204,13 +204,26 @@ class Application(QMainWindow):
         QApplication.quit()
 
     def cut(self) -> None:
-        print("File Cut!")
+        """Cuts the selected item to the clipboard"""
+        selected_items = self.scene.selectedItems()
+        if selected_items:
+            item = selected_items[0]
+            self.clipboard.setPixmap(item.pixmap())
+            self.scene.removeItem(item)
 
     def copy(self) -> None:
-        print("File Copied!")
+        """Copies the selected item."""
+        selected_items = self.scene.selectedItems()
+        if selected_items:
+            item = selected_items[0]
+            self.clipboard.setPixmap(item.pixmap())
 
     def paste(self) -> None:
-        print("File Pasted!")
+        """Pastes the clipboard image content"""
+        pixmap = self.clipboard.pixmap()
+        if not pixmap.isNull():
+            self.image = pixmap
+            self.scene.addPixmap(self.image)
 # endregion
 
 # region ToolBar Buttons
