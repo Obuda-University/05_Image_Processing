@@ -11,6 +11,7 @@ class Application(QMainWindow):
         self.WINDOW_HEIGHT: int = 700
         self.image: [QPixmap, None] = None
         self.toolbar_menus: dict = {}
+        self.current_file = None
 
         super(Application, self).__init__()
         self.resize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
@@ -178,10 +179,18 @@ class Application(QMainWindow):
             self.view.setSceneRect(self.image.rect().adjusted(0, 0, 0, 0).toRectF())
 
     def save(self) -> None:
-        print("File Saved!")
+        """Saves the current file"""
+        if not hasattr(self, 'current_file') or self.current_file is None:
+            self.save_as()
+        else:
+            self.image.save(self.current_file)
 
     def save_as(self) -> None:
-        print("File Saved As!")
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save Image As", "", "Images (*.png *.jpg *.bmp)")
+        if file_name:
+            self.current_file = file_name
+            self.save()
+            print("saved")
 
     def exit(self) -> None:
         print("Exited Application!")
