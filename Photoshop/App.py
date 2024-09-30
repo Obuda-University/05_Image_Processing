@@ -193,7 +193,15 @@ class Application(QMainWindow):
             print("saved")
 
     def exit(self) -> None:
-        print("Exited Application!")
+        reply = QMessageBox.question(self, 'Exit Application',
+                                     "Do you want to save changes before exiting?",
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No |
+                                     QMessageBox.StandardButton.Cancel)
+        if reply == QMessageBox.StandardButton.Yes:
+            self.save()
+        elif reply == QMessageBox.StandardButton.Cancel:
+            return
+        QApplication.quit()
 
     def cut(self) -> None:
         print("File Cut!")
