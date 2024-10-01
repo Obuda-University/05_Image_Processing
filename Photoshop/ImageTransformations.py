@@ -117,7 +117,6 @@ class ImageTransformations:
                 plt.title('Histogram')
                 plt.show()
 
-    # TODO: error handling
     @staticmethod
     def histogram_equalize(selected_items: [list[QGraphicsItem], list]) -> None:
         """Apply histogram equalization to the selected image(s)"""
@@ -140,3 +139,24 @@ class ImageTransformations:
 
                 eq_image = QImage(img_eq.data, width, height, image.bytesPerLine(), image.format())
                 item.setPixmap(QPixmap.fromImage(eq_image))
+
+    @staticmethod
+    def filter_box(selected_items: [list[QGraphicsItem], list]) -> None:
+        """Apply a box filter (mean filter) on the selected image(s)"""
+        for item in selected_items:
+            if isinstance(item, QGraphicsPixmapItem):
+                pixmap = item.pixmap()
+                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+
+                width, height = image.width(), image.height()
+                img_data = np.zeros((height, width, 3), dtype=np.uint8)
+
+                for x in range(width):
+                    for y in range(height):
+                        color = image.pixelColor(x, y)
+                        img_data[y, x] = [color.red(), color.green(), color.blue()]
+
+                filtered_data = cv2.blur(img_data, (5, 5))
+                filtered_image = QImage(filtered_data.data, width, height, image.bytesPerLine(), image.format())
+                item.setPixmap(QPixmap.fromImage(filtered_image))
+

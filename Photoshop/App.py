@@ -257,7 +257,10 @@ class Application(QMainWindow):
             QMessageBox.warning(self, "Something went wrong", f"You may not equalize the image(s) further due to: {e}")
 
     def filter_box(self) -> None:
-        pass
+        """Apply a box filter (mean filter) on the selected image(s)"""
+        selected_items = self.scene.selectedItems()
+        self.dialog_no_selection(selected_items, "Please select an image for box filtering.")
+        self.image_transformations.filter_box(selected_items)
 
     def filter_gauss(self) -> None:
         pass
