@@ -1,12 +1,9 @@
 import sys
 from CustomView import CustomView
-from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack, QImage
-from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel,
+from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
+from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel, QGraphicsItem,
                              QComboBox, QGraphicsScene, QToolButton, QMessageBox, QFileDialog, QGraphicsPixmapItem)
-import numpy as np
-from PIL import Image, ImageOps, ImageEnhance
-import matplotlib.pyplot as plt
-from scipy.ndimage import gaussian_filter, sobel, laplace
+from ImageTransformations import ImageTransformations
 
 
 class Application(QMainWindow):
@@ -16,6 +13,7 @@ class Application(QMainWindow):
         self.image: [QPixmap, None] = None
         self.toolbar_menus: dict = {}
         self.current_file = None
+        self.image_transformations = ImageTransformations()
 
         super(Application, self).__init__()
         self.resize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
@@ -114,6 +112,16 @@ class Application(QMainWindow):
         zoom_percentage = int(zoom_factor * 100)
         self.zoom_combobox.setCurrentText(f"{zoom_percentage}%")
 
+    def dialog_no_selection(self, selected_items: [list[QGraphicsItem], list]) -> None:
+        if not selected_items:
+            QMessageBox.information(self, "No Selection", "Please select an image to negate.")
+            return
+
+    def dialog_question(self, window_name: str, text: str) -> QMessageBox.StandardButton:
+        reply = QMessageBox.question(self, window_name, text, QMessageBox.StandardButton.Yes |
+                                     QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel)
+        return reply
+
 # region MenuBar Buttons
     # TODO: add actions to the todo stack
     def send_image_back(self) -> None:
@@ -142,10 +150,7 @@ class Application(QMainWindow):
 
     def new(self) -> None:
         """Creates a new file by clearing the current scene"""
-        reply = QMessageBox.question(self, 'Unsaved Work', "Do you want to save changes before creating a new file?",
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No |
-                                     QMessageBox.StandardButton.Cancel)
-
+        reply = self.dialog_question("Unsaved Work", "Do you want to save changes before creating a new file?")
         if reply == QMessageBox.StandardButton.Yes:
             self.save()
         elif reply == QMessageBox.StandardButton.Cancel:
@@ -177,10 +182,7 @@ class Application(QMainWindow):
             print("saved")
 
     def exit(self) -> None:
-        reply = QMessageBox.question(self, 'Exit Application',
-                                     "Do you want to save changes before exiting?",
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No |
-                                     QMessageBox.StandardButton.Cancel)
+        reply = self.dialog_question("Exit Application", "Do you want to save changes before exiting?")
         if reply == QMessageBox.StandardButton.Yes:
             self.save()
         elif reply == QMessageBox.StandardButton.Cancel:
@@ -212,29 +214,10 @@ class Application(QMainWindow):
 
 # region ToolBar Buttons
     def negate(self) -> None:
-        """Invert the colors of the selected image"""
+        """Invert the colors of the selected image(s)"""
         selected_items = self.scene.selectedItems()
-
-        if not selected_items:
-            QMessageBox.information(self, "No Selection", "Please select an image to negate.")
-            return
-
-        for item in selected_items:
-            if isinstance(item, QGraphicsPixmapItem):
-                pixmap = item.pixmap()
-                image = pixmap.toImage()
-                image = image.convertToFormat(QImage.Format.Format_RGBA8888)
-                width: int = image.width()
-                height: int = image.height()
-
-                ptr = image.bits()
-                ptr.setsize(image.sizeInBytes())
-
-                arr = np.array(ptr).reshape((height, width, 4))  # RGBA format
-                arr[..., :3] = 255 - arr[..., :3]  # Invert the RGB values excluding the alpha channel
-                negated_image = QImage(arr.data, width, height, image.bytesPerLine(), image.format())
-                negated_pixmap = QPixmap.fromImage(negated_image)
-                item.setPixmap(negated_pixmap)
+        self.dialog_no_selection(selected_items)
+        self.image_transformations.negate(selected_items)
 
     def grayscale(self) -> None:
         pass
