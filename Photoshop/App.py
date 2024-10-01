@@ -248,7 +248,10 @@ class Application(QMainWindow):
         self.image_transformations.histogram_create(selected_items)
 
     def hist_eq(self) -> None:
-        pass
+        """Apply histogram equalization to the selected image(s)"""
+        selected_items = self.scene.selectedItems()
+        self.dialog_no_selection(selected_items, "Please select an image for histogram equalization.")
+        self.image_transformations.histogram_equalize(selected_items)
 
     def filter_box(self) -> None:
         pass
