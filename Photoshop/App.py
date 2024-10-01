@@ -112,9 +112,9 @@ class Application(QMainWindow):
         zoom_percentage = int(zoom_factor * 100)
         self.zoom_combobox.setCurrentText(f"{zoom_percentage}%")
 
-    def dialog_no_selection(self, selected_items: [list[QGraphicsItem], list]) -> None:
+    def dialog_no_selection(self, selected_items: [list[QGraphicsItem], list], text: str) -> None:
         if not selected_items:
-            QMessageBox.information(self, "No Selection", "Please select an image to negate.")
+            QMessageBox.information(self, "No Selection", text)
             return
 
     def dialog_question(self, window_name: str, text: str) -> QMessageBox.StandardButton:
@@ -216,11 +216,14 @@ class Application(QMainWindow):
     def negate(self) -> None:
         """Invert the colors of the selected image(s)"""
         selected_items = self.scene.selectedItems()
-        self.dialog_no_selection(selected_items)
+        self.dialog_no_selection(selected_items, "Please select an image to negate.")
         self.image_transformations.negate(selected_items)
 
     def grayscale(self) -> None:
-        pass
+        """Convert the selected image(s) to grayscale"""
+        selected_items = self.scene.selectedItems()
+        self.dialog_no_selection(selected_items, "Please select an image to grayscale.")
+        self.image_transformations.grayscale(selected_items)
 
     def trans_gamma(self) -> None:
         pass
