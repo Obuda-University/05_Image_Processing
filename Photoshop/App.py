@@ -269,7 +269,10 @@ class Application(QMainWindow):
         self.image_transformations.filter_gauss(selected_items)
 
     def edge_sobel(self) -> None:
-        pass
+        """Apply Sobel edge detection on the selected image(s)"""
+        selected_items = self.scene.selectedItems()
+        self.dialog_no_selection(selected_items, "Please select an image for Sobel edge detection.")
+        self.image_transformations.edge_sobel(selected_items)
 
     def edge_laplace(self) -> None:
         pass

@@ -180,3 +180,42 @@ class ImageTransformations:
                 gauss_filtered = gaussian_filter(img_data, sigma=2)
                 filtered_image = QImage(gauss_filtered.data, width, height, image.bytesPerLine(), image.format())
                 item.setPixmap(QPixmap.fromImage(filtered_image))
+
+    @staticmethod
+    def edge_sobel(selected_items: [list[QGraphicsItem], list]) -> None:
+        """Apply Sobel edge detection on the selected image(s)"""
+        for item in selected_items:
+            if isinstance(item, QGraphicsPixmapItem):
+                pixmap = item.pixmap()
+                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+                width, height = image.width(), image.height()
+
+                sobel_image = QImage(width, height, QImage.Format.Format_RGBA8888)
+
+                # Sobel kernels
+                gx = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
+                gy = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
+
+                for x in range(1, width - 1):
+                    for y in range(1, height - 1):
+                        r_x = g_x = b_x = r_y = g_y = b_y = 0
+                        for i in range(3):
+                            for j in range(3):
+                                color = image.pixelColor(x - 1 + i, y - 1 + j)
+                                r_x += color.red() * gx[i, j]
+                                g_x += color.green() * gx[i, j]
+                                b_x += color.blue() * gx[i, j]
+
+                                r_y += color.red() * gy[i, j]
+                                g_y += color.green() * gy[i, j]
+                                b_y += color.blue() * gy[i, j]
+
+                        r = int(np.sqrt(r_x ** 2 + r_y ** 2))
+                        g = int(np.sqrt(g_x ** 2 + g_y ** 2))
+                        b = int(np.sqrt(b_x ** 2 + b_y ** 2))
+
+                        edge_color = QColor(min(r, 255), min(g, 255), min(b, 255), 255)
+                        sobel_image.setPixelColor(x, y, edge_color)
+
+                negated_pixmap = QPixmap.fromImage(sobel_image)
+                item.setPixmap(negated_pixmap)
