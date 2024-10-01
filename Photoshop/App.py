@@ -1,7 +1,7 @@
 import sys
 from CustomView import CustomView
 from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
-from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel, QGraphicsItem,
+from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel, QGraphicsItem, QInputDialog,
                              QComboBox, QGraphicsScene, QToolButton, QMessageBox, QFileDialog, QGraphicsPixmapItem)
 from ImageTransformations import ImageTransformations
 
@@ -226,7 +226,14 @@ class Application(QMainWindow):
         self.image_transformations.grayscale(selected_items)
 
     def trans_gamma(self) -> None:
-        pass
+        """Apply gamma transformation on the selected image(s)"""
+        gamma_value, ok = QInputDialog.getDouble(self, "Gamma Correction", "Enter gamma value (e.g., 2.2):", 1.0, 0.1,
+                                                 10.0, 2)
+        if not ok:
+            return
+        selected_items = self.scene.selectedItems()
+        self.dialog_no_selection(selected_items, "Please select an image for gamma correction.")
+        self.image_transformations.gamma_transformation(selected_items, gamma_value)
 
     def trans_log(self) -> None:
         pass

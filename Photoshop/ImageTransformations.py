@@ -43,3 +43,27 @@ class ImageTransformations:
                         gray_image.setPixelColor(x, y, gray_color)
 
                 item.setPixmap(QPixmap.fromImage(gray_image))
+
+    @staticmethod
+    def gamma_transformation(selected_items: [list[QGraphicsItem], list], gamma_value: float) -> None:
+        for item in selected_items:
+            if isinstance(item, QGraphicsPixmapItem):
+                pixmap = item.pixmap()
+                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+
+                width, height = image.width(), image.height()
+                gamma_image = QImage(width, height, image.format())
+
+                for x in range(width):
+                    for y in range(height):
+                        color = image.pixelColor(x, y)
+                        r = int(255 * ((color.red() / 255) ** gamma_value))
+                        g = int(255 * ((color.green() / 255) ** gamma_value))
+                        b = int(255 * ((color.blue() / 255) ** gamma_value))
+                        gamma_color = QColor(r, g, b, color.alpha())
+                        gamma_image.setPixelColor(x, y, gamma_color)
+
+                item.setPixmap(QPixmap.fromImage(gamma_image))
+
+
+
