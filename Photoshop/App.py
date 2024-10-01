@@ -40,6 +40,8 @@ class Application(QMainWindow):
             (QIcon.fromTheme("document-save"), None, self.save),
             (QIcon.fromTheme("edit-undo"), "Ctrl+Z", self.undo),
             (QIcon.fromTheme("edit-redo"), "Ctrl+Y", self.redo),
+            ("Send to Back", None, self.send_image_back),
+            ("Send to Front", None, self.send_image_front),
         ]
 
         # Actions for the file menu
@@ -90,55 +92,9 @@ class Application(QMainWindow):
         self.create_toolbar_action_items(main_toolbar, "Filters", "Gauss Filter", self.filter_gauss)
         self.create_toolbar_action_items(main_toolbar, "Edge Detections", "Sobel Edge Detection", self.edge_sobel)
         self.create_toolbar_action_items(main_toolbar, "Edge Detections", "Laplace Edge Detection", self.edge_laplace)
-        self.create_toolbar_action_items(main_toolbar, None, "Characteristic Point Detection", self.point)
+        self.create_toolbar_action_items(main_toolbar, None, "Point Detection", self.point)
 
         self.setMouseTracking(True)
-
-    def create_menu_items(self, menu: [QMenu, QMenuBar], action_list: list[[(str, [str, None], str), None]]) -> None:
-        """Helper function to add functions to a menu"""
-        for i in action_list:
-            if i is None:
-                menu.addSeparator()
-            else:
-                text, shortcut, callback = i
-                if isinstance(text, str) and text != "":
-                    act = QAction(text, self)
-                else:
-                    act = QAction(text, "", self)
-                if shortcut:
-                    act.setShortcut(shortcut)
-                act.triggered.connect(callback)
-                menu.addAction(act)
-
-    def create_toolbar_action_items(self, toolbar: QToolBar, menu_name: [str, None],
-                                    action_name: str, action: callable) -> None:
-        """Helper function to add buttons to the toolbar and create menus"""
-        q_action = QAction(action_name, self)
-        q_action.triggered.connect(action)
-
-        if not menu_name:
-            toolbar.addAction(q_action)
-        else:
-            if menu_name in self.toolbar_menus:
-                menu_button = self.toolbar_menus[menu_name]
-                menu_button.menu().addAction(q_action)
-            else:
-                menu = QMenu()
-                menu.addAction(q_action)
-
-                menu_button = QToolButton()
-                menu_button.setText(menu_name)
-                menu_button.setMenu(menu)
-                menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-
-                toolbar.addWidget(menu_button)
-                self.toolbar_menus[menu_name] = menu_button
-
-    def create_selectable_image(self, pixmap: QPixmap) -> None:
-        pixmap_item = QGraphicsPixmapItem(pixmap)
-        pixmap_item.setFlags(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable |
-                             QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
-        self.scene.addItem(pixmap_item)
 
     # TODO: Make functions
     def on_zoom_changed(self, text: str) -> None:
@@ -157,6 +113,22 @@ class Application(QMainWindow):
 
 # region MenuBar Buttons
     # TODO: add actions to the todo stack
+    def send_image_back(self) -> None:
+        """Send the selected image behind all other images"""
+        selected_items = self.scene.selectedItems()
+        if selected_items:
+            min_z_value = min([i.zValue() for i in self.scene.items()]) if self.scene.items() else 0
+            for i, item in enumerate(selected_items):
+                item.setZValue(min_z_value - (i + 1))
+
+    def send_image_front(self) -> None:
+        """Send the selected image in front of all other images"""
+        selected_items = self.scene.selectedItems()
+        if selected_items:
+            max_z_value = max([i.zValue() for i in self.scene.items()]) if self.scene.items() else 0
+            for i, item in enumerate(selected_items):
+                item.setZValue(max_z_value + (i + 1))
+
     def undo(self) -> None:
         self.undo_stack.undo()
         print("undo")
@@ -211,7 +183,7 @@ class Application(QMainWindow):
         elif reply == QMessageBox.StandardButton.Cancel:
             return
         QApplication.quit()
-    # TODO: add selected item for the application
+
     def cut(self) -> None:
         """Cuts the selected item to the clipboard"""
         selected_items = self.scene.selectedItems()
@@ -275,8 +247,52 @@ class Application(QMainWindow):
         pass
 # endregion
 
-    def holder(self) -> None:
-        pass
+    def create_menu_items(self, menu: [QMenu, QMenuBar], action_list: list[[(str, [str, None], str), None]]) -> None:
+        """Helper function to add functions to a menu"""
+        for i in action_list:
+            if i is None:
+                menu.addSeparator()
+            else:
+                text, shortcut, callback = i
+                if isinstance(text, str) and text != "":
+                    act = QAction(text, self)
+                else:
+                    act = QAction(text, "", self)
+                if shortcut:
+                    act.setShortcut(shortcut)
+                act.triggered.connect(callback)
+                menu.addAction(act)
+
+    def create_toolbar_action_items(self, toolbar: QToolBar, menu_name: [str, None],
+                                    action_name: str, action: callable) -> None:
+        """Helper function to add buttons to the toolbar and create menus"""
+        q_action = QAction(action_name, self)
+        q_action.triggered.connect(action)
+
+        if not menu_name:
+            toolbar.addAction(q_action)
+        else:
+            if menu_name in self.toolbar_menus:
+                menu_button = self.toolbar_menus[menu_name]
+                menu_button.menu().addAction(q_action)
+            else:
+                menu = QMenu()
+                menu.addAction(q_action)
+
+                menu_button = QToolButton()
+                menu_button.setText(menu_name)
+                menu_button.setMenu(menu)
+                menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+
+                toolbar.addWidget(menu_button)
+                self.toolbar_menus[menu_name] = menu_button
+
+    def create_selectable_image(self, pixmap: QPixmap) -> None:
+        pixmap_item = QGraphicsPixmapItem(pixmap)
+        pixmap_item.setFlags(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable |
+                             QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
+        self.scene.addItem(pixmap_item)
+
 
 
 if __name__ == '__main__':
