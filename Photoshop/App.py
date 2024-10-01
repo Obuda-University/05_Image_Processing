@@ -2,7 +2,7 @@ import sys
 from CustomView import CustomView
 from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel,
-                             QComboBox, QGraphicsScene, QToolButton, QMessageBox, QFileDialog)
+                             QComboBox, QGraphicsScene, QToolButton, QMessageBox, QFileDialog, QGraphicsPixmapItem)
 
 
 class Application(QMainWindow):
@@ -79,7 +79,7 @@ class Application(QMainWindow):
 
         # Create toolbar actions
         self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Right 90°", self.rotate_right)
-        self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Right 90°", self.rotate_left)
+        self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Left 90°", self.rotate_left)
         self.create_toolbar_action_items(main_toolbar, None, "Negate", self.negate)
         self.create_toolbar_action_items(main_toolbar, None, "Grayscale", self.grayscale)
         self.create_toolbar_action_items(main_toolbar, "Transformations", "Gamma Transformation", self.trans_gamma)
@@ -134,6 +134,12 @@ class Application(QMainWindow):
                 toolbar.addWidget(menu_button)
                 self.toolbar_menus[menu_name] = menu_button
 
+    def create_selectable_image(self, pixmap: QPixmap) -> None:
+        pixmap_item = QGraphicsPixmapItem(pixmap)
+        pixmap_item.setFlags(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable |
+                             QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
+        self.scene.addItem(pixmap_item)
+
     # TODO: Make functions
     def on_zoom_changed(self, text: str) -> None:
         try:
@@ -177,8 +183,8 @@ class Application(QMainWindow):
         filename, _ = QFileDialog.getOpenFileName(self, "Open Image", "", "Images (*.png *.xpm *.jpg *.jpeg *.bmp)")
         if filename:
             self.image = QPixmap(filename)
-            self.scene.clear()
-            self.scene.addPixmap(self.image)
+            # self.scene.clear()
+            self.create_selectable_image(self.image)
             self.view.setSceneRect(self.image.rect().adjusted(0, 0, 0, 0).toRectF())
 
     def save(self) -> None:
@@ -225,8 +231,7 @@ class Application(QMainWindow):
         """Pastes the clipboard image content"""
         pixmap = self.clipboard.pixmap()
         if not pixmap.isNull():
-            self.image = pixmap
-            self.scene.addPixmap(self.image)
+            self.create_selectable_image(pixmap)
 # endregion
 
 # region ToolBar Buttons
