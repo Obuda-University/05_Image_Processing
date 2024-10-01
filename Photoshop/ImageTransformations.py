@@ -219,3 +219,35 @@ class ImageTransformations:
 
                 negated_pixmap = QPixmap.fromImage(sobel_image)
                 item.setPixmap(negated_pixmap)
+
+    @staticmethod
+    def edge_laplace(selected_items: [list[QGraphicsItem], list]) -> None:
+        """Apply Laplacian edge detection to the selected image(s)"""
+        for item in selected_items:
+            if isinstance(item, QGraphicsPixmapItem):
+                pixmap = item.pixmap()
+                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+                width, height = image.width(), image.height()
+
+                laplacian_image = QImage(width, height, QImage.Format.Format_RGBA8888)
+                laplacian_kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
+
+                for x in range(1, width - 1):
+                    for y in range(1, height - 1):
+                        r = g = b = 0
+                        for i in range(3):
+                            for j in range(3):
+                                color = image.pixelColor(x - 1 + i, y - 1 + j)
+                                r += color.red() * laplacian_kernel[i, j]
+                                g += color.green() * laplacian_kernel[i, j]
+                                b += color.blue() * laplacian_kernel[i, j]
+
+                        laplace_color = QColor(min(max(r + 128, 0), 255),
+                                               min(max(g + 128, 0), 255),
+                                               min(max(b + 128, 0), 255),
+                                               255)
+                        laplacian_image.setPixelColor(x, y, laplace_color)
+
+                negated_pixmap = QPixmap.fromImage(laplacian_image)
+                item.setPixmap(negated_pixmap)
+

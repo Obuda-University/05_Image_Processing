@@ -275,7 +275,10 @@ class Application(QMainWindow):
         self.image_transformations.edge_sobel(selected_items)
 
     def edge_laplace(self) -> None:
-        pass
+        """Apply Laplacian edge detection to the selected image(s)"""
+        selected_items = self.scene.selectedItems()
+        self.dialog_no_selection(selected_items, "Please select an image to apply Laplacian edge detection.")
+        self.image_transformations.edge_laplace(selected_items)
 
     def point(self) -> None:
         pass
