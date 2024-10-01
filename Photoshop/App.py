@@ -114,20 +114,6 @@ class Application(QMainWindow):
         zoom_percentage = int(zoom_factor * 100)
         self.zoom_combobox.setCurrentText(f"{zoom_percentage}%")
 
-    @staticmethod
-    def q_pixmap_to_pil(q_pixmap_image: QPixmap) -> Image:
-        q_image = q_pixmap_image.toImage()
-        width, height = q_image.width(), q_image.height()
-        buffer = q_image.bits().asstring(width * height * 4)
-        pil_image = Image.frombytes('RGBA', (width, height), buffer)
-        return pil_image
-
-    @staticmethod
-    def pil_to_q_pixmap(pil_image: Image) -> QPixmap:
-        buffer = pil_image.tobytes("raw", "RGBA")
-        q_image = QImage(buffer, pil_image.width, pil_image.height, QImage.Format.Format_RGBA8888)
-        return QPixmap.fromImage(q_image)
-
 # region MenuBar Buttons
     # TODO: add actions to the todo stack
     def send_image_back(self) -> None:
@@ -220,12 +206,35 @@ class Application(QMainWindow):
         """Pastes the clipboard image content"""
         pixmap = self.clipboard.pixmap()
         if not pixmap.isNull():
+            self.image = pixmap
             self.create_selectable_image(pixmap)
 # endregion
 
 # region ToolBar Buttons
     def negate(self) -> None:
-        pass
+        """Invert the colors of the selected image"""
+        selected_items = self.scene.selectedItems()
+
+        if not selected_items:
+            QMessageBox.information(self, "No Selection", "Please select an image to negate.")
+            return
+
+        for item in selected_items:
+            if isinstance(item, QGraphicsPixmapItem):
+                pixmap = item.pixmap()
+                image = pixmap.toImage()
+                image = image.convertToFormat(QImage.Format.Format_RGBA8888)
+                width: int = image.width()
+                height: int = image.height()
+
+                ptr = image.bits()
+                ptr.setsize(image.sizeInBytes())
+
+                arr = np.array(ptr).reshape((height, width, 4))  # RGBA format
+                arr[..., :3] = 255 - arr[..., :3]  # Invert the RGB values excluding the alpha channel
+                negated_image = QImage(arr.data, width, height, image.bytesPerLine(), image.format())
+                negated_pixmap = QPixmap.fromImage(negated_image)
+                item.setPixmap(negated_pixmap)
 
     def grayscale(self) -> None:
         pass
