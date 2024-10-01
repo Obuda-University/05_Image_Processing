@@ -1,8 +1,12 @@
 import sys
 from CustomView import CustomView
-from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
+from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack, QImage
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel,
                              QComboBox, QGraphicsScene, QToolButton, QMessageBox, QFileDialog, QGraphicsPixmapItem)
+import numpy as np
+from PIL import Image, ImageOps, ImageEnhance
+import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter, sobel, laplace
 
 
 class Application(QMainWindow):
@@ -96,7 +100,6 @@ class Application(QMainWindow):
 
         self.setMouseTracking(True)
 
-    # TODO: Make functions
     def on_zoom_changed(self, text: str) -> None:
         try:
             zoom_value = int(text.strip('%'))
@@ -110,6 +113,20 @@ class Application(QMainWindow):
         """Update the zoom combobox based on the zoom_factor from the CustomView"""
         zoom_percentage = int(zoom_factor * 100)
         self.zoom_combobox.setCurrentText(f"{zoom_percentage}%")
+
+    @staticmethod
+    def q_pixmap_to_pil(q_pixmap_image: QPixmap) -> Image:
+        q_image = q_pixmap_image.toImage()
+        width, height = q_image.width(), q_image.height()
+        buffer = q_image.bits().asstring(width * height * 4)
+        pil_image = Image.frombytes('RGBA', (width, height), buffer)
+        return pil_image
+
+    @staticmethod
+    def pil_to_q_pixmap(pil_image: Image) -> QPixmap:
+        buffer = pil_image.tobytes("raw", "RGBA")
+        q_image = QImage(buffer, pil_image.width, pil_image.height, QImage.Format.Format_RGBA8888)
+        return QPixmap.fromImage(q_image)
 
 # region MenuBar Buttons
     # TODO: add actions to the todo stack
@@ -292,7 +309,6 @@ class Application(QMainWindow):
         pixmap_item.setFlags(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable |
                              QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
         self.scene.addItem(pixmap_item)
-
 
 
 if __name__ == '__main__':
