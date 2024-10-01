@@ -27,6 +27,7 @@ class ImageTransformations:
 
     @staticmethod
     def grayscale(selected_items: [list[QGraphicsItem], list]) -> None:
+        """Convert the selected image(s) to grayscale"""
         for item in selected_items:
             if isinstance(item, QGraphicsPixmapItem):
                 pixmap = item.pixmap()
@@ -46,6 +47,7 @@ class ImageTransformations:
 
     @staticmethod
     def gamma_transformation(selected_items: [list[QGraphicsItem], list], gamma_value: float) -> None:
+        """Apply gamma transformation on the selected image(s)"""
         for item in selected_items:
             if isinstance(item, QGraphicsPixmapItem):
                 pixmap = item.pixmap()
@@ -65,5 +67,26 @@ class ImageTransformations:
 
                 item.setPixmap(QPixmap.fromImage(gamma_image))
 
+    @staticmethod
+    def logarithmic_transformation(selected_items: [list[QGraphicsItem], list]) -> None:
+        """Apply logarithmic transformation on the selected image"""
+        c: float = 255 / np.log(1 + 255)  # Scaling factor for logarithmic transformation
 
+        for item in selected_items:
+            if isinstance(item, QGraphicsPixmapItem):
+                pixmap = item.pixmap()
+                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
 
+                width, height = image.width(), image.height()
+                log_image = QImage(width, height, image.format())
+
+                for x in range(width):
+                    for y in range(height):
+                        color = image.pixelColor(x, y)
+                        r = int(c * np.log(1 + color.red()))
+                        g = int(c * np.log(1 + color.green()))
+                        b = int(c * np.log(1 + color.blue()))
+                        log_color = QColor(r, g, b, color.alpha())
+                        log_image.setPixelColor(x, y, log_color)
+
+                item.setPixmap(QPixmap.fromImage(log_image))

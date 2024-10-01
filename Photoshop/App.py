@@ -236,7 +236,10 @@ class Application(QMainWindow):
         self.image_transformations.gamma_transformation(selected_items, gamma_value)
 
     def trans_log(self) -> None:
-        pass
+        """Apply logarithmic transformation on the selected image"""
+        selected_items = self.scene.selectedItems()
+        self.dialog_no_selection(selected_items, "Please select an image for gamma logarithmic transformation.")
+        self.image_transformations.logarithmic_transformation(selected_items)
 
     def hist_create(self) -> None:
         pass
