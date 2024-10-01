@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsItem
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+from scipy.ndimage import gaussian_filter
 
 
 class ImageTransformations:
@@ -160,3 +161,22 @@ class ImageTransformations:
                 filtered_image = QImage(filtered_data.data, width, height, image.bytesPerLine(), image.format())
                 item.setPixmap(QPixmap.fromImage(filtered_image))
 
+    @staticmethod
+    def filter_gauss(selected_items: [list[QGraphicsItem], list]) -> None:
+        """Apply Gaussian filter on the selected image(s)"""
+        for item in selected_items:
+            if isinstance(item, QGraphicsPixmapItem):
+                pixmap = item.pixmap()
+                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+
+                width, height = image.width(), image.height()
+                img_data = np.zeros((height, width, 3), dtype=np.uint8)
+
+                for x in range(width):
+                    for y in range(height):
+                        color = image.pixelColor(x, y)
+                        img_data[y, x] = [color.red(), color.green(), color.blue()]
+
+                gauss_filtered = gaussian_filter(img_data, sigma=2)
+                filtered_image = QImage(gauss_filtered.data, width, height, image.bytesPerLine(), image.format())
+                item.setPixmap(QPixmap.fromImage(filtered_image))

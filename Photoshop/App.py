@@ -263,7 +263,10 @@ class Application(QMainWindow):
         self.image_transformations.filter_box(selected_items)
 
     def filter_gauss(self) -> None:
-        pass
+        """Apply Gaussian filter on the selected image(s)"""
+        selected_items = self.scene.selectedItems()
+        self.dialog_no_selection(selected_items, "Please select an image for Gaussian filtering.")
+        self.image_transformations.filter_gauss(selected_items)
 
     def edge_sobel(self) -> None:
         pass
