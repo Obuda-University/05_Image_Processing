@@ -251,7 +251,10 @@ class Application(QMainWindow):
         """Apply histogram equalization to the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for histogram equalization.")
-        self.image_transformations.histogram_equalize(selected_items)
+        try:
+            self.image_transformations.histogram_equalize(selected_items)
+        except Exception as e:
+            QMessageBox.warning(self, "Something went wrong", f"You may not equalize the image(s) further due to: {e}")
 
     def filter_box(self) -> None:
         pass
