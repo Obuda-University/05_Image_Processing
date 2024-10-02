@@ -240,7 +240,8 @@ class Application(QMainWindow):
             return
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for gamma correction.")
-        time = self.image_transformations.measure_time(self.image_transformations.gamma_transformation, selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.gamma_transformation,
+                                                       selected_items, gamma_value=gamma_value)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def trans_log(self) -> None:
