@@ -251,10 +251,7 @@ class Application(QMainWindow):
         """Apply histogram equalization to the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for histogram equalization.")
-        try:
-            self.image_transformations.histogram_equalize(selected_items)
-        except Exception as e:
-            QMessageBox.warning(self, "Something went wrong", f"You may not equalize the image(s) further due to: {e}")
+        self.image_transformations.histogram_equalize(selected_items)
 
     def filter_box(self) -> None:
         """Apply a box filter (mean filter) on the selected image(s)"""
@@ -275,13 +272,17 @@ class Application(QMainWindow):
         self.image_transformations.edge_sobel(selected_items)
 
     def edge_laplace(self) -> None:
-        """Apply Laplacian edge detection to the selected image(s)"""
+        """Apply Laplacian edge detection on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image to apply Laplacian edge detection.")
         self.image_transformations.edge_laplace(selected_items)
 
     def point(self) -> None:
-        pass
+        """Detect characteristic corners using the Lucas-Kanade (Shi-Tomasi) Operator on the selected image(s)"""
+        selected_items = self.scene.selectedItems()
+        self.dialog_no_selection(selected_items, "Please select an image to apply characteristic point detection.")
+        # Dialog could be used to get parameters by the user
+        self.image_transformations.corner_detection_kandae(selected_items)
 
     def rotate_right(self) -> None:
         pass

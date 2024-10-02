@@ -1,9 +1,9 @@
-from PyQt6.QtGui import QImage, QPixmap, QColor
 from PyQt6.QtWidgets import QGraphicsItem, QGraphicsPixmapItem
-import numpy as np
-import matplotlib.pyplot as plt
-import cv2
+from PyQt6.QtGui import QImage, QPixmap, QColor
 from scipy.ndimage import gaussian_filter
+import matplotlib.pyplot as plt
+import numpy as np
+import cv2
 
 
 class ImageTransformations:
@@ -183,4 +183,26 @@ class ImageTransformations:
                 negated_pixmap = QPixmap.fromImage(laplacian_image)
                 item.setPixmap(negated_pixmap)
 
-    # TODO: add point detection
+    def corner_detection_kandae(self, selected_items: list[QGraphicsItem], max_corners: int = 400,
+                                quality_level: float = 0.01, min_distance: int = 10) -> None:
+        """Detect characteristic corners using the Lucas-Kanade (Shi-Tomasi) Operator on the selected image(s)"""
+        for item in selected_items:
+            pixmap = item.pixmap()
+            if pixmap.isNull():
+                continue
+
+            image = pixmap.toImage()
+            img_array = self._q_image_to_np(image)
+            gray = cv2.cvtColor(img_array[..., :3], cv2.COLOR_RGBA2GRAY)
+
+            # Use Shi-Tomasi corner detection (goodFeaturesToTrack)
+            corners = cv2.goodFeaturesToTrack(gray, maxCorners=max_corners,
+                                              qualityLevel=quality_level, minDistance=min_distance)
+            if corners is not None:
+                corners = np.int0(corners)
+                for corner in corners:
+                    x, y = corner.ravel()
+                    cv2.circle(img_array, (x, y), 5, (255, 0, 0, 255), 1)  # Draw red circles for corners
+
+            final_image = self._np_to_q_image(img_array, image.format())
+            item.setPixmap(QPixmap.fromImage(final_image))
