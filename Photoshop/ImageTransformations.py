@@ -7,7 +7,6 @@ import cv2
 
 
 # TODO: the original image should stay and the transformed image should be next to it
-# TODO: speed optimization
 # TODO: show runtime of the function
 class ImageTransformations:
     def __init__(self) -> None:
@@ -165,6 +164,29 @@ class ImageTransformations:
 
                 negated_pixmap = QPixmap.fromImage(laplacian_image)
                 item.setPixmap(negated_pixmap)
+
+    def edge_laplace_optimized(self, selected_items: list[QGraphicsItem]) -> None:
+        for item in selected_items:
+            pixmap = item.pixmap()
+            if pixmap.isNull():
+                continue
+
+            image = pixmap.toImage()
+            img_array = self._q_image_to_np(image)
+
+            # Convert to grayscale for edge detection
+            gray = cv2.cvtColor(img_array[..., :3], cv2.COLOR_RGBA2GRAY)
+
+            # Apply the Laplacian operator using OpenCV
+            laplacian = cv2.Laplacian(gray, cv2.CV_64F)
+            laplacian = np.abs(laplacian).clip(0, 255).astype(np.uint8)  # Take absolute value and ensure it's in range
+
+            # Convert back to RGBA format to overlay on original image
+            img_array[..., :3] = cv2.cvtColor(laplacian, cv2.COLOR_GRAY2RGBA)[..., :3]
+
+            # Convert the result back to QImage and set on the item
+            laplace_image = self._np_to_q_image(img_array, image.format())
+            item.setPixmap(QPixmap.fromImage(laplace_image))
 
     def corner_detection_kandae(self, selected_items: list[QGraphicsItem], max_corners: int = 400,
                                 quality_level: float = 0.01, min_distance: int = 10) -> None:
