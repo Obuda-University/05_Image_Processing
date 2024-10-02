@@ -1,9 +1,9 @@
-import sys
-from CustomView import CustomView
-from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel, QGraphicsItem, QInputDialog,
                              QComboBox, QGraphicsScene, QToolButton, QMessageBox, QFileDialog, QGraphicsPixmapItem)
+from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
 from ImageTransformations import ImageTransformations
+from CustomView import CustomView
+import sys
 
 
 class Application(QMainWindow):
