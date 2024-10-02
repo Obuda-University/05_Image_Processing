@@ -113,7 +113,6 @@ class ImageTransformations:
             gauss_image = self._np_to_q_image(img_array, image.format())
             item.setPixmap(QPixmap.fromImage(gauss_image))
 
-    # TODO: fix sobel edge detection
     @staticmethod
     def edge_sobel(selected_items: list[QGraphicsItem]) -> None:
         """Apply Sobel edge detection on the selected image(s)"""
@@ -138,6 +137,20 @@ class ImageTransformations:
                                 r_x += color.red() * gx[i, j]
                                 g_x += color.green() * gx[i, j]
                                 b_x += color.blue() * gx[i, j]
+
+                                r_y += color.red() * gy[i, j]
+                                g_y += color.green() * gy[i, j]
+                                b_y += color.blue() * gy[i, j]
+
+                        r = int(np.sqrt(r_x ** 2 + r_y ** 2))
+                        g = int(np.sqrt(g_x ** 2 + g_y ** 2))
+                        b = int(np.sqrt(b_x ** 2 + b_y ** 2))
+
+                        edge_color = QColor(min(r, 255), min(g, 255), min(b, 255), 255)
+                        sobel_image.setPixelColor(x, y, edge_color)
+
+                negated_pixmap = QPixmap.fromImage(sobel_image)
+                item.setPixmap(negated_pixmap)
 
     @staticmethod
     def edge_laplace(selected_items: list[QGraphicsItem]) -> None:
