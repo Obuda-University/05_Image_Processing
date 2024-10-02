@@ -281,8 +281,11 @@ class Application(QMainWindow):
         """Detect characteristic corners using the Lucas-Kanade (Shi-Tomasi) Operator on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image to apply characteristic point detection.")
-        # Dialog could be used to get parameters by the user
-        self.image_transformations.corner_detection_kandae(selected_items)
+        max_corners, ok = QInputDialog.getInt(self, "Maximum Corners to Detect", "Enter max value:",
+                                              200, 10, 1000, 1)
+        if not ok:
+            return
+        self.image_transformations.corner_detection_kandae(selected_items, max_corners=max_corners)
 
     def rotate_right(self) -> None:
         pass
