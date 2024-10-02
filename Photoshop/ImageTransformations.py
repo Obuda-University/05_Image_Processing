@@ -1,5 +1,5 @@
 from PyQt6.QtGui import QImage, QPixmap, QColor
-from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsItem
+from PyQt6.QtWidgets import QGraphicsItem, QGraphicsPixmapItem
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
@@ -11,178 +11,111 @@ class ImageTransformations:
         pass
 
     @staticmethod
-    def negate(selected_items: [list[QGraphicsItem], list]) -> None:
+    def _q_image_to_np(image: QImage) -> np.ndarray:
+        """Helper function to convert QImage to a NumPy array"""
+        image = image.convertToFormat(QImage.Format.Format_RGBA8888)
+        width, height = image.width(), image.height()
+        ptr = image.bits()
+        ptr.setsize(image.sizeInBytes())
+        return np.array(ptr).reshape((height, width, 4)).copy()  # Deep copy to ensure memory is properly managed
+
+    @staticmethod
+    def _np_to_q_image(arr: np.ndarray, image_format: QImage.Format) -> QImage:
+        """Helper function to convert NumPy array back to QImage"""
+        height, width, _ = arr.shape
+        return QImage(arr.data, width, height, image_format).copy()  # Ensure to not reference unsafe memory
+
+    def negate(self, selected_items: list[QGraphicsItem]) -> None:
         """Invert the colors of the selected image(s)"""
         for item in selected_items:
-            if isinstance(item, QGraphicsPixmapItem):
-                pixmap = item.pixmap()
-                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
-                width, height = image.width(), image.height()
+            pixmap = item.pixmap()
+            if pixmap.isNull():
+                continue
+            image = pixmap.toImage()
+            img_array = self._q_image_to_np(image)
+            img_array[..., :3] = 255 - img_array[..., :3]
+            negated_image = self._np_to_q_image(img_array, image.format())
+            item.setPixmap(QPixmap.fromImage(negated_image))
 
-                ptr = image.bits()
-                ptr.setsize(image.sizeInBytes())
-
-                arr = np.array(ptr).reshape((height, width, 4))  # RGBA format
-                arr[..., :3] = 255 - arr[..., :3]  # Invert the RGB values excluding the alpha channel
-                negated_image = QImage(arr.data, width, height, image.bytesPerLine(), image.format())
-                negated_pixmap = QPixmap.fromImage(negated_image)
-                item.setPixmap(negated_pixmap)
-
-    @staticmethod
-    def grayscale(selected_items: [list[QGraphicsItem], list]) -> None:
+    def grayscale(self, selected_items: list[QGraphicsItem]) -> None:
         """Convert the selected image(s) to grayscale"""
         for item in selected_items:
-            if isinstance(item, QGraphicsPixmapItem):
-                pixmap = item.pixmap()
-                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+            pixmap = item.pixmap()
+            image = pixmap.toImage()
+            img_array = self._q_image_to_np(image)
+            grayscale_values = np.dot(img_array[..., :3], [0.299, 0.587, 0.114])
+            img_array[..., :3] = grayscale_values[..., None]
+            gray_image = self._np_to_q_image(img_array, image.format())
+            item.setPixmap(QPixmap.fromImage(gray_image))
 
-                width, height = image.width(), image.height()
-                gray_image = QImage(width, height, image.format())
-
-                for x in range(width):
-                    for y in range(height):
-                        color = image.pixelColor(x, y)
-                        gray_value = int(0.299 * color.red() + 0.587 * color.green() + 0.144 * color.blue())
-                        gray_color = QColor(gray_value, gray_value, gray_value, color.alpha())
-                        gray_image.setPixelColor(x, y, gray_color)
-
-                item.setPixmap(QPixmap.fromImage(gray_image))
-
-    @staticmethod
-    def gamma_transformation(selected_items: [list[QGraphicsItem], list], gamma_value: float) -> None:
+    def gamma_transformation(self, selected_items: list[QGraphicsItem], gamma_value: float) -> None:
         """Apply gamma transformation on the selected image(s)"""
+        inv_gamma = 1.0 / gamma_value
         for item in selected_items:
-            if isinstance(item, QGraphicsPixmapItem):
-                pixmap = item.pixmap()
-                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+            pixmap = item.pixmap()
+            image = pixmap.toImage()
+            img_array = self._q_image_to_np(image)
+            img_array[..., :3] = (255 * ((img_array[..., :3] / 255) ** inv_gamma)).clip(0, 255).astype(np.uint8)
+            gamma_image = self._np_to_q_image(img_array, image.format())
+            item.setPixmap(QPixmap.fromImage(gamma_image))
 
-                width, height = image.width(), image.height()
-                gamma_image = QImage(width, height, image.format())
-
-                for x in range(width):
-                    for y in range(height):
-                        color = image.pixelColor(x, y)
-                        r = int(255 * ((color.red() / 255) ** gamma_value))
-                        g = int(255 * ((color.green() / 255) ** gamma_value))
-                        b = int(255 * ((color.blue() / 255) ** gamma_value))
-                        gamma_color = QColor(r, g, b, color.alpha())
-                        gamma_image.setPixelColor(x, y, gamma_color)
-
-                item.setPixmap(QPixmap.fromImage(gamma_image))
-
-    @staticmethod
-    def logarithmic_transformation(selected_items: [list[QGraphicsItem], list]) -> None:
+    def logarithmic_transformation(self, selected_items: list[QGraphicsItem]) -> None:
         """Apply logarithmic transformation on the selected image(s)"""
         c: float = 255 / np.log(1 + 255)  # Scaling factor for logarithmic transformation
-
         for item in selected_items:
-            if isinstance(item, QGraphicsPixmapItem):
-                pixmap = item.pixmap()
-                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+            pixmap = item.pixmap()
+            image = pixmap.toImage()
+            img_array = self._q_image_to_np(image)
+            img_array[..., :3] = (c * np.log(1 + img_array[..., :3])).clip(0, 255).astype(np.uint8)
+            log_image = self._np_to_q_image(img_array, image.format())
+            item.setPixmap(QPixmap.fromImage(log_image))
 
-                width, height = image.width(), image.height()
-                log_image = QImage(width, height, image.format())
-
-                for x in range(width):
-                    for y in range(height):
-                        color = image.pixelColor(x, y)
-                        r = int(c * np.log(1 + color.red()))
-                        g = int(c * np.log(1 + color.green()))
-                        b = int(c * np.log(1 + color.blue()))
-                        log_color = QColor(r, g, b, color.alpha())
-                        log_image.setPixelColor(x, y, log_color)
-
-                item.setPixmap(QPixmap.fromImage(log_image))
-
-    @staticmethod
-    def histogram_create(selected_items: [list[QGraphicsItem], list]) -> None:
+    def histogram_create(self, selected_items: list[QGraphicsItem]) -> None:
         """Create a histogram of the selected image(s)"""
         for item in selected_items:
-            if isinstance(item, QGraphicsPixmapItem):
-                pixmap = item.pixmap()
-                image = pixmap.toImage()
+            pixmap = item.pixmap()
+            image = pixmap.toImage()
+            img_array = self._q_image_to_np(image)
+            plt.hist(img_array[..., :3].ravel(), bins=256, color='black', alpha=0.7, histtype='bar', density=True)
+            plt.xlabel('Pixel Intensity')
+            plt.ylabel('Frequency')
+            plt.title('Histogram')
+            plt.show()
 
-                width, height = image.width(), image.height()
-                pixel_data = np.zeros((height, width, 3), dtype=np.uint8)
-
-                for x in range(width):
-                    for y in range(height):
-                        color = image.pixelColor(x, y)
-                        pixel_data[y, x, 0] = color.red()
-                        pixel_data[y, x, 1] = color.green()
-                        pixel_data[y, x, 2] = color.blue()
-
-                plt.hist(pixel_data.ravel(), bins=256, color='black', alpha=0.7, histtype='bar', density=True)
-                plt.xlabel('Pixel Intensity')
-                plt.ylabel('Frequency')
-                plt.title('Histogram')
-                plt.show()
-
-    @staticmethod
-    def histogram_equalize(selected_items: [list[QGraphicsItem], list]) -> None:
+    def histogram_equalize(self, selected_items: list[QGraphicsItem]) -> None:
         """Apply histogram equalization to the selected image(s)"""
         for item in selected_items:
-            if isinstance(item, QGraphicsPixmapItem):
-                pixmap = item.pixmap()
-                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+            pixmap = item.pixmap()
+            image = pixmap.toImage()
+            img_array = self._q_image_to_np(image)
+            for i in range(3):  # Apply equalization on R, G, B channels
+                img_array[..., i] = cv2.equalizeHist(img_array[..., i])
+            eq_image = self._np_to_q_image(img_array, image.format())
+            item.setPixmap(QPixmap.fromImage(eq_image))
 
-                width, height = image.width(), image.height()
-                img_data = np.zeros((height, width, 3), dtype=np.uint8)
-
-                for x in range(width):
-                    for y in range(height):
-                        color = image.pixelColor(x, y)
-                        img_data[y, x] = [color.red(), color.green(), color.blue()]
-
-                img_eq = np.zeros_like(img_data)
-                for i in range(3):
-                    img_eq[..., i] = cv2.equalizeHist(img_data[..., i])
-
-                eq_image = QImage(img_eq.data, width, height, image.bytesPerLine(), image.format())
-                item.setPixmap(QPixmap.fromImage(eq_image))
-
-    @staticmethod
-    def filter_box(selected_items: [list[QGraphicsItem], list]) -> None:
+    def filter_box(self, selected_items: list[QGraphicsItem]) -> None:
         """Apply a box filter (mean filter) on the selected image(s)"""
         for item in selected_items:
-            if isinstance(item, QGraphicsPixmapItem):
-                pixmap = item.pixmap()
-                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+            pixmap = item.pixmap()
+            image = pixmap.toImage()
+            img_array = self._q_image_to_np(image)
+            img_array[..., :3] = cv2.blur(img_array[..., :3], (5, 5))
+            filtered_image = self._np_to_q_image(img_array, image.format())
+            item.setPixmap(QPixmap.fromImage(filtered_image))
 
-                width, height = image.width(), image.height()
-                img_data = np.zeros((height, width, 3), dtype=np.uint8)
-
-                for x in range(width):
-                    for y in range(height):
-                        color = image.pixelColor(x, y)
-                        img_data[y, x] = [color.red(), color.green(), color.blue()]
-
-                filtered_data = cv2.blur(img_data, (5, 5))
-                filtered_image = QImage(filtered_data.data, width, height, image.bytesPerLine(), image.format())
-                item.setPixmap(QPixmap.fromImage(filtered_image))
-
-    @staticmethod
-    def filter_gauss(selected_items: [list[QGraphicsItem], list]) -> None:
+    def filter_gauss(self, selected_items: list[QGraphicsItem]) -> None:
         """Apply Gaussian filter on the selected image(s)"""
         for item in selected_items:
-            if isinstance(item, QGraphicsPixmapItem):
-                pixmap = item.pixmap()
-                image = pixmap.toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+            pixmap = item.pixmap()
+            image = pixmap.toImage()
+            img_array = self._q_image_to_np(image)
+            img_array[..., :3] = gaussian_filter(img_array[..., :3], sigma=2)
+            gauss_image = self._np_to_q_image(img_array, image.format())
+            item.setPixmap(QPixmap.fromImage(gauss_image))
 
-                width, height = image.width(), image.height()
-                img_data = np.zeros((height, width, 3), dtype=np.uint8)
-
-                for x in range(width):
-                    for y in range(height):
-                        color = image.pixelColor(x, y)
-                        img_data[y, x] = [color.red(), color.green(), color.blue()]
-
-                gauss_filtered = gaussian_filter(img_data, sigma=2)
-                filtered_image = QImage(gauss_filtered.data, width, height, image.bytesPerLine(), image.format())
-                item.setPixmap(QPixmap.fromImage(filtered_image))
-
+    # TODO: fix sobel edge detection
     @staticmethod
-    def edge_sobel(selected_items: [list[QGraphicsItem], list]) -> None:
+    def edge_sobel(selected_items: list[QGraphicsItem]) -> None:
         """Apply Sobel edge detection on the selected image(s)"""
         for item in selected_items:
             if isinstance(item, QGraphicsPixmapItem):
@@ -206,22 +139,8 @@ class ImageTransformations:
                                 g_x += color.green() * gx[i, j]
                                 b_x += color.blue() * gx[i, j]
 
-                                r_y += color.red() * gy[i, j]
-                                g_y += color.green() * gy[i, j]
-                                b_y += color.blue() * gy[i, j]
-
-                        r = int(np.sqrt(r_x ** 2 + r_y ** 2))
-                        g = int(np.sqrt(g_x ** 2 + g_y ** 2))
-                        b = int(np.sqrt(b_x ** 2 + b_y ** 2))
-
-                        edge_color = QColor(min(r, 255), min(g, 255), min(b, 255), 255)
-                        sobel_image.setPixelColor(x, y, edge_color)
-
-                negated_pixmap = QPixmap.fromImage(sobel_image)
-                item.setPixmap(negated_pixmap)
-
     @staticmethod
-    def edge_laplace(selected_items: [list[QGraphicsItem], list]) -> None:
+    def edge_laplace(selected_items: list[QGraphicsItem]) -> None:
         """Apply Laplacian edge detection to the selected image(s)"""
         for item in selected_items:
             if isinstance(item, QGraphicsPixmapItem):
@@ -251,3 +170,4 @@ class ImageTransformations:
                 negated_pixmap = QPixmap.fromImage(laplacian_image)
                 item.setPixmap(negated_pixmap)
 
+    # TODO: add point detection
