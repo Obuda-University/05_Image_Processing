@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBa
 from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
 from ImageTransformations import ImageTransformations
 from CustomView import CustomView
+from PyQt6.QtCore import Qt
 import sys
 
 
@@ -36,6 +37,10 @@ class Application(QMainWindow):
         main_menubar = self.menuBar()
         file_menu = main_menubar.addMenu("&File")
         edit_menu = main_menubar.addMenu("&Edit")
+
+        # Add label to display the measured time
+        self.time_label = QLabel(f"Time: 0.0s\t\t")
+        main_menubar.setCornerWidget(self.time_label, Qt.Corner.TopRightCorner)
 
         # Actions for the main menu
         main_menu_actions: list[[(str, [str, None], str), None]] = [
@@ -217,13 +222,15 @@ class Application(QMainWindow):
         """Invert the colors of the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image to negate.")
-        self.image_transformations.negate(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.negate, selected_items)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def grayscale(self) -> None:
         """Convert the selected image(s) to grayscale"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image to grayscale.")
-        self.image_transformations.grayscale(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.grayscale, selected_items)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def trans_gamma(self) -> None:
         """Apply gamma transformation on the selected image(s)"""
@@ -233,49 +240,58 @@ class Application(QMainWindow):
             return
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for gamma correction.")
-        self.image_transformations.gamma_transformation(selected_items, gamma_value)
+        time = self.image_transformations.measure_time(self.image_transformations.gamma_transformation, selected_items)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def trans_log(self) -> None:
         """Apply logarithmic transformation on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for gamma logarithmic transformation.")
-        self.image_transformations.logarithmic_transformation(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.logarithmic_transformation,
+                                                       selected_items)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def hist_create(self) -> None:
         """Create a histogram of the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image to create a histogram.")
-        self.image_transformations.histogram_create(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.histogram_create, selected_items)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def hist_eq(self) -> None:
         """Apply histogram equalization to the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for histogram equalization.")
-        self.image_transformations.histogram_equalize(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.histogram_equalize, selected_items)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def filter_box(self) -> None:
         """Apply a box filter (mean filter) on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for box filtering.")
-        self.image_transformations.filter_box(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.filter_box, selected_items)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def filter_gauss(self) -> None:
         """Apply Gaussian filter on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for Gaussian filtering.")
-        self.image_transformations.filter_gauss(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.filter_gauss, selected_items)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def edge_sobel(self) -> None:
         """Apply Sobel edge detection on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for Sobel edge detection.")
-        self.image_transformations.edge_sobel(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.edge_sobel, selected_items)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def edge_laplace(self) -> None:
         """Apply Laplacian edge detection on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image to apply Laplacian edge detection.")
-        self.image_transformations.edge_laplace(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.edge_laplace, selected_items)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def point(self) -> None:
         """Detect characteristic corners using the Lucas-Kanade (Shi-Tomasi) Operator on the selected image(s)"""
@@ -285,7 +301,9 @@ class Application(QMainWindow):
                                               200, 10, 1000, 1)
         if not ok:
             return
-        self.image_transformations.corner_detection_kandae(selected_items, max_corners=max_corners)
+        time = self.image_transformations.measure_time(self.image_transformations.corner_detection_kanade,
+                                                       selected_items, max_corners=max_corners)
+        self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def rotate_right(self) -> None:
         pass

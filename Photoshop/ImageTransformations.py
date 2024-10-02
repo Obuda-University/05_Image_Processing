@@ -1,3 +1,5 @@
+import time
+
 from PyQt6.QtWidgets import QGraphicsItem, QGraphicsPixmapItem
 from PyQt6.QtGui import QImage, QPixmap, QColor
 from scipy.ndimage import gaussian_filter
@@ -11,6 +13,14 @@ import cv2
 class ImageTransformations:
     def __init__(self) -> None:
         pass
+
+    @staticmethod
+    def measure_time(func: callable, *args, **kwargs) -> float:
+        """Utility function to measure the time taken by any function"""
+        start_time = time.time()
+        func(*args, **kwargs)
+        end_time = time.time()
+        return end_time - start_time
 
     @staticmethod
     def _q_image_to_np(image: QImage) -> np.ndarray:
@@ -188,7 +198,7 @@ class ImageTransformations:
             laplace_image = self._np_to_q_image(img_array, image.format())
             item.setPixmap(QPixmap.fromImage(laplace_image))
 
-    def corner_detection_kandae(self, selected_items: list[QGraphicsItem], max_corners: int = 400,
+    def corner_detection_kanade(self, selected_items: list[QGraphicsItem], max_corners: int = 400,
                                 quality_level: float = 0.01, min_distance: int = 10) -> None:
         """Detect characteristic corners using the Lucas-Kanade (Shi-Tomasi) Operator on the selected image(s)"""
         for item in selected_items:
