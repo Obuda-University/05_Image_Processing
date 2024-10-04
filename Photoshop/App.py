@@ -2,8 +2,8 @@ from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBa
                              QComboBox, QGraphicsScene, QToolButton, QMessageBox, QFileDialog, QGraphicsPixmapItem)
 from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
 from ImageTransformations import ImageTransformations
+from PyQt6.QtCore import Qt, QPointF
 from CustomView import CustomView
-from PyQt6.QtCore import Qt
 import sys
 
 
@@ -222,14 +222,16 @@ class Application(QMainWindow):
         """Invert the colors of the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image to negate.")
-        time = self.image_transformations.measure_time(self.image_transformations.negate, selected_items)
+        items = self.create_copy(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.negate, items)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def grayscale(self) -> None:
         """Convert the selected image(s) to grayscale"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image to grayscale.")
-        time = self.image_transformations.measure_time(self.image_transformations.grayscale, selected_items)
+        items = self.create_copy(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.grayscale, items)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def trans_gamma(self) -> None:
@@ -240,16 +242,17 @@ class Application(QMainWindow):
             return
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for gamma correction.")
+        items = self.create_copy(selected_items)
         time = self.image_transformations.measure_time(self.image_transformations.gamma_transformation,
-                                                       selected_items, gamma_value=gamma_value)
+                                                       items, gamma_value=gamma_value)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def trans_log(self) -> None:
         """Apply logarithmic transformation on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for gamma logarithmic transformation.")
-        time = self.image_transformations.measure_time(self.image_transformations.logarithmic_transformation,
-                                                       selected_items)
+        items = self.create_copy(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.logarithmic_transformation,items)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def hist_create(self) -> None:
@@ -263,35 +266,40 @@ class Application(QMainWindow):
         """Apply histogram equalization to the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for histogram equalization.")
-        time = self.image_transformations.measure_time(self.image_transformations.histogram_equalize, selected_items)
+        items = self.create_copy(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.histogram_equalize, items)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def filter_box(self) -> None:
         """Apply a box filter (mean filter) on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for box filtering.")
-        time = self.image_transformations.measure_time(self.image_transformations.filter_box, selected_items)
+        items = self.create_copy(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.filter_box, items)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def filter_gauss(self) -> None:
         """Apply Gaussian filter on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for Gaussian filtering.")
-        time = self.image_transformations.measure_time(self.image_transformations.filter_gauss, selected_items)
+        items = self.create_copy(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.filter_gauss, items)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def edge_sobel(self) -> None:
         """Apply Sobel edge detection on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image for Sobel edge detection.")
-        time = self.image_transformations.measure_time(self.image_transformations.edge_sobel, selected_items)
+        items = self.create_copy(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.edge_sobel, items)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def edge_laplace(self) -> None:
         """Apply Laplacian edge detection on the selected image(s)"""
         selected_items = self.scene.selectedItems()
         self.dialog_no_selection(selected_items, "Please select an image to apply Laplacian edge detection.")
-        time = self.image_transformations.measure_time(self.image_transformations.edge_laplace, selected_items)
+        items = self.create_copy(selected_items)
+        time = self.image_transformations.measure_time(self.image_transformations.edge_laplace, items)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def point(self) -> None:
@@ -302,8 +310,9 @@ class Application(QMainWindow):
                                               200, 10, 1000, 1)
         if not ok:
             return
+        items = self.create_copy(selected_items)
         time = self.image_transformations.measure_time(self.image_transformations.corner_detection_kanade,
-                                                       selected_items, max_corners=max_corners)
+                                                       items, max_corners=max_corners)
         self.time_label.setText(f"Time: {time:.4f}s\t\t")
 
     def rotate_right(self) -> None:
@@ -358,6 +367,28 @@ class Application(QMainWindow):
         pixmap_item.setFlags(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable |
                              QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
         self.scene.addItem(pixmap_item)
+
+    def create_copy(self, selected_items: list[QGraphicsItem]) -> list[QGraphicsPixmapItem]:
+        """Copies the selected image(s), applies the desired transformation, and places them next to the original."""
+        if not selected_items:
+            return []
+
+        copied_items = []
+
+        for item in selected_items:
+            original_pixmap = item.pixmap()
+            copied_item = QGraphicsPixmapItem(original_pixmap)
+
+            original_pos = item.pos()
+            copied_item.setPos(QPointF(original_pos.x() + original_pixmap.width() + 20, original_pos.y()))
+
+            copied_item.setFlags(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable |
+                                 QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable)
+
+            self.scene.addItem(copied_item)
+            copied_items.append(copied_item)
+
+        return copied_items
 
 
 if __name__ == '__main__':

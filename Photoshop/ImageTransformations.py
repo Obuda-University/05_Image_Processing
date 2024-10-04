@@ -1,15 +1,12 @@
-import time
-
 from PyQt6.QtWidgets import QGraphicsItem, QGraphicsPixmapItem
 from PyQt6.QtGui import QImage, QPixmap, QColor
 from scipy.ndimage import gaussian_filter
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 import cv2
 
 
-# TODO: the original image should stay and the transformed image should be next to it
-# TODO: show runtime of the function
 class ImageTransformations:
     def __init__(self) -> None:
         pass
