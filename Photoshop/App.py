@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QMenu, QMenuBar, QToolBar, QLabel, QGraphicsItem, QInputDialog,
                              QComboBox, QGraphicsScene, QToolButton, QMessageBox, QFileDialog, QGraphicsPixmapItem)
-from PyQt6.QtGui import QPixmap, QAction, QIcon, QUndoStack
+from PyQt6.QtGui import QPixmap, QAction, QIcon
 from ImageTransformations import ImageTransformations
 from PyQt6.QtCore import Qt, QPointF
 from CustomView import CustomView
@@ -28,7 +28,6 @@ class Application(QMainWindow):
         self.setCentralWidget(self.view)
 
         # Functionalities
-        self.undo_stack = QUndoStack(self)
         self.clipboard = QApplication.clipboard()
 
         # Connect to the zoom_changed signal
@@ -45,8 +44,8 @@ class Application(QMainWindow):
         # Actions for the main menu
         main_menu_actions: list[[(str, [str, None], str), None]] = [
             (QIcon.fromTheme("document-save"), None, self.save),
-            (QIcon.fromTheme("edit-undo"), "Ctrl+Z", self.undo),
-            (QIcon.fromTheme("edit-redo"), "Ctrl+Y", self.redo),
+            # (QIcon.fromTheme("edit-undo"), "Ctrl+Z", self.undo),
+            # (QIcon.fromTheme("edit-redo"), "Ctrl+Y", self.redo),
             ("Send to Back", None, self.send_image_back),
             ("Send to Front", None, self.send_image_front),
         ]
@@ -87,8 +86,8 @@ class Application(QMainWindow):
         main_toolbar.addWidget(self.zoom_combobox)
 
         # Create toolbar actions
-        self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Right 90°", self.rotate_right)
-        self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Left 90°", self.rotate_left)
+        # self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Right 90°", self.rotate_right)
+        # self.create_toolbar_action_items(main_toolbar, "Rotate", "Rotate Left 90°", self.rotate_left)
         self.create_toolbar_action_items(main_toolbar, None, "Negate", self.negate)
         self.create_toolbar_action_items(main_toolbar, None, "Grayscale", self.grayscale)
         self.create_toolbar_action_items(main_toolbar, "Transformations", "Gamma Transformation", self.trans_gamma)
@@ -128,7 +127,6 @@ class Application(QMainWindow):
         return reply
 
 # region MenuBar Buttons
-    # TODO: add actions to the todo stack
     def send_image_back(self) -> None:
         """Send the selected image behind all other images"""
         selected_items = self.scene.selectedItems()
@@ -144,14 +142,6 @@ class Application(QMainWindow):
             max_z_value = max([i.zValue() for i in self.scene.items()]) if self.scene.items() else 0
             for i, item in enumerate(selected_items):
                 item.setZValue(max_z_value + (i + 1))
-
-    def undo(self) -> None:
-        self.undo_stack.undo()
-        print("undo")
-
-    def redo(self) -> None:
-        self.undo_stack.redo()
-        print("redo")
 
     def new(self) -> None:
         """Creates a new file by clearing the current scene"""
