@@ -1,5 +1,7 @@
 # Assignment
 
+Using media pipe hand landmark model
+![img.png](Resources/img.png)
 # Photoshop
 ### Featuring:
 észrevétel:
