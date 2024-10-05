@@ -34,8 +34,8 @@ while True:
         landmark_list = hand["lmList"]
         bounding_box_info = hand["bbox"]
 
-        """x_finger, y_finger = landmark_list[8][:2]
-        pressed_key = keyboard.check_pressed_key(x_finger, y_finger)"""
+        x_finger, y_finger = landmark_list[8][:2]
+        pressed_key = keys.check_pressed_key(x_finger, y_finger)
 
         """if pressed_key:
             l, _, _ = detector.findDistance(landmark_list[8][:2], landmark_list[12][:2], img, color=(0, 255, 0))
