@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.ndimage import median_filter
+
 
 # region Task 1
 image = np.array([[0, 1, 5, 5, 5, 5, 5, 0],
@@ -48,16 +50,18 @@ gradient_magnitude = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
 gradient_direction = np.arctan2(sobel_y, sobel_x) * (180 / np.pi)
 
 # Show Results
+plt.figure(figsize=(12, 6))
+# Original binary image
 plt.subplot(1, 3, 1)
 plt.imshow(binary_image, cmap='gray')
 plt.title('Binary Image')
 plt.colorbar()
-
+# Gradient direction
 plt.subplot(1, 3, 2)
 plt.imshow(gradient_direction, cmap='hsv')
 plt.title('Gradient Direction')
 plt.colorbar()
-
+# Gradient magnitude
 plt.subplot(1, 3, 3)
 plt.imshow(gradient_magnitude, cmap='gray')
 plt.title('Gradient Magnitude')
@@ -67,7 +71,29 @@ plt.show()
 # endregion
 
 # region Task 3
+image_03 = np.abs(np.subtract.outer(np.arange(8), np.arange(8)))
 
+# Median filter
+filtered_image = median_filter(image, size=3, mode='constant', cval=0)
+
+# Preserving boundary pixels
+filtered_image[0, :] = image[0, :]
+filtered_image[-1, :] = image[-1, :]
+filtered_image[:, 0] = image[:, 0]
+filtered_image[:, -1] = image[:, -1]
+
+# Show results
+plt.figure(figsize=(10, 5))
+# Original
+plt.subplot(1, 2, 1)
+plt.imshow(image, cmap='gray', interpolation='none')
+plt.title('Original Image')
+plt.colorbar()
+# Filtered
+plt.subplot(1, 2, 2)
+plt.imshow(filtered_image, cmap='gray', interpolation='none')
+plt.title('Median Filtered Image')
+plt.colorbar()
+
+plt.show()
 # endregion
-
-
