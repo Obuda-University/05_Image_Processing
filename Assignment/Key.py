@@ -2,11 +2,8 @@ import cv2
 
 
 class Key:
-    def __init__(self, pos: (int, int), text: str, size: [list[int, int], None]):
-        if size is None:
-            self.size = [100, 100]
-        else:
-            self.size = size
+    def __init__(self, pos: tuple[int, int], text: str, size: list[int] = None):
+        self.size = size if size else [100, 100]
         self.pos = pos
         self.text = text
         self.hovered = False
@@ -24,10 +21,8 @@ class Key:
 
         overlay = img.copy()  # For opacity control
         cv2.rectangle(img, self.pos, (x + w, y + h), (0, 0, 0), cv2.FILLED)
-
         # Apply transparency
         cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0, img)
-
         # Center text inside the button
         font_scale: int = 4
         thickness: int = 4
