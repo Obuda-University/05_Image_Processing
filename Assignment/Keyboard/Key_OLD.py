@@ -1,7 +1,7 @@
 import cv2
 
 
-class Key:
+class Key_OLD:
     def __init__(self, pos: tuple[int, int], text: str, size: list[int] = None):
         self.size = size if size else [100, 100]
         self.pos = pos

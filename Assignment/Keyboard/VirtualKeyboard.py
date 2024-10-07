@@ -1,13 +1,13 @@
 from pynput.keyboard import Controller, Key
-from HandTracking import HandTracking
-from Keyboard import KeyBoard
+from Assignment.HandTracking import HandTracking
+from Assignment.Keyboard.KBD import KeyBoard_OLD
 import numpy as np
 import threading
 
 
 class VirtualKeyboard:
     def __init__(self, layout: list[list[str]], hand_tracking: HandTracking) -> None:
-        self.keyboard = KeyBoard(layout)
+        self.keyboard = KeyBoard_OLD(layout)
         self.keyboard_controller = Controller()
         self.hand_tracking = hand_tracking
 

@@ -1,4 +1,4 @@
-from VirtualKeyboard import VirtualKeyboard
+from Assignment.Keyboard.VirtualKeyboard import VirtualKeyboard
 from HandTracking import HandTracking
 from Camera import Camera
 import concurrent.futures

@@ -1,9 +1,9 @@
-from Key import Key
+from Assignment.Keyboard.Key_OLD import Key_OLD
 
 
-class KeyBoard:
+class KeyBoard_OLD:
     def __init__(self, list_of_keys: list[list[str]]) -> None:
-        self.keys: list[Key] = []
+        self.keys: list[Key_OLD] = []
         self.create_keyboard(list_of_keys)
 
     def create_keyboard(self, list_of_keys: list[list[str]]) -> None:
@@ -41,15 +41,15 @@ class KeyBoard:
                 if key_text == 'space':
                     x = c_key_x
                     space_width = 4 * (key_width + spacing) - spacing
-                    self.keys.append(Key((x, y), key_text, [space_width, key_height]))
+                    self.keys.append(Key_OLD((x, y), key_text, [space_width, key_height]))
                 elif key_text == '123':
                     x = q_key_x
-                    self.keys.append(Key((x, y), key_text, [key_width * 2 - spacing, key_height]))
+                    self.keys.append(Key_OLD((x, y), key_text, [key_width * 2 - spacing, key_height]))
                 elif key_text == 'OK':
                     x = o_key_x
-                    self.keys.append(Key((x, y), key_text, [key_width * 2 - spacing, key_height]))
+                    self.keys.append(Key_OLD((x, y), key_text, [key_width * 2 - spacing, key_height]))
                 else:
-                    self.keys.append(Key((x, y), key_text, [key_width, key_height]))
+                    self.keys.append(Key_OLD((x, y), key_text, [key_width, key_height]))
 
     def draw_keyboard(self, img: any) -> any:
         for key in self.keys:
