@@ -1,7 +1,9 @@
 from Assignment.Keyboard.VirtualKeyboard import VirtualKeyboard
+from Assignment.Keyboard.OnScreenKeyboard import OnScreenKeyboard
 from HandTracking import HandTracking
 from Camera import Camera
 import concurrent.futures
+import numpy as np
 import cv2
 
 
@@ -14,6 +16,7 @@ class Application:
                                                  ['Y', 'X', 'C', 'V', 'B', 'N', 'M',],
                                                  ['123', 'space', 'OK']]
         self.virtual_keyboard = VirtualKeyboard(self.keyboard_layout, self.hand_tracking)
+        self.onscreen_keyboard = OnScreenKeyboard()
         self.running: bool = True
 
     def run(self) -> None:
@@ -25,10 +28,10 @@ class Application:
                     hands_future = executor.submit(self.hand_tracking.detect_hands, frame)
                     hands, processed_frame = hands_future.result()
 
-                    input_future = executor.submit(self.virtual_keyboard.process_input, hands)
+                    input_future = executor.submit(self.onscreen_keyboard.key_press, hands)
                     input_future.result()
 
-                    draw_future = executor.submit(self.virtual_keyboard.draw, processed_frame)
+                    draw_future = executor.submit(self.onscreen_keyboard.draw_keyboard, processed_frame)
                     final_frame = draw_future.result()
 
                     cv2.imshow("Assignment", final_frame)
