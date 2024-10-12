@@ -1,4 +1,3 @@
-from Assignment.Keyboard.VirtualKeyboard import VirtualKeyboard
 from Assignment.Keyboard.OnScreenKeyboard import OnScreenKeyboard
 from HandTracking import HandTracking
 from Camera import Camera
@@ -11,12 +10,7 @@ class Application:
     def __init__(self) -> None:
         self.camera = Camera()
         self.hand_tracking = HandTracking()
-        self.keyboard_layout: list[list[str]] = [['Q', 'W', 'E', 'R', 'T', 'Z', 'U', 'I', 'O', 'P',],
-                                                 ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',],
-                                                 ['Y', 'X', 'C', 'V', 'B', 'N', 'M',],
-                                                 ['123', 'space', 'OK']]
-        self.virtual_keyboard = VirtualKeyboard(self.keyboard_layout, self.hand_tracking)
-        self.onscreen_keyboard = OnScreenKeyboard()
+        self.onscreen_keyboard = OnScreenKeyboard(self.hand_tracking.detector)
         self.running: bool = True
 
     def run(self) -> None:

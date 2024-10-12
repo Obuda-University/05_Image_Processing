@@ -6,19 +6,24 @@ import cv2
 
 
 class OnScreenKeyboard:
-    row_1 = [('Q', '1'), ('W', '2'), ('E', '3'), ('R', '4'), ('T', '5'),
-             ('Z', '6'), ('U', '7'), ('I', '8'), ('O', '9'), ('P', '0')]
-    row_2 = [('A', '@'), ('S', '#'), ('D', '$'), ('F', '_'), ('G', '&'), ('H', '-'), ('J', '+'), ('K', '('), ('L', ')')]
-    row_3 = [('shift', '/'), ('Y', '*'), ('X', '"'), ('C', "'"), ('V', ':'),
-             ('B', ';'), ('N', '!'), ('M', '?'), ('backspace', 'backspace')]
+    row_1 = [('q', 'Q', '1'), ('w', 'W', '2'), ('e', 'E', '3'), ('r', 'R', '4'), ('t', 'T', '5'),
+             ('z', 'Z', '6'), ('u', 'U', '7'), ('i', 'I', '8'), ('o', 'O', '9'), ('p', 'P', '0')]
+    row_2 = [('a', 'A', '@'), ('s', 'S', '#'), ('d', 'D', '$'), ('f', 'F', '_'), ('g', 'G', '&'),
+             ('h', 'H', '-'), ('j', 'J', '+'), ('k', 'K', '('), ('l', 'L', ')')]
+    row_3 = [('shift', '/'), ('y', 'Y', '*'), ('x', 'X', '"'), ('c', 'C', "'"), ('v', 'V', ':'),
+             ('b', 'B', ';'), ('n', 'N', '!'), ('m', 'M', '?'), ('backspace', 'backspace', 'backspace')]
     row_4 = [('123', 'ABC'), ('space', 'space'), ('enter', 'enter')]
 
-    def __init__(self) -> None:
+    def __init__(self, detector: HandTracking().detector) -> None:
         self.keys: list[list[(str, str)]] = [self.row_1, self.row_2, self.row_3, self.row_4]
         self.key_width, self.key_height = 100, 100
         self.start_x, self.start_y = 50, 50
         self.keyboard_image = np.zeros((600, 800, 3), dtype=np.uint8)
-        self.is_numeric_mode = False  # Track if '123' is active
+        self.is_numeric_mode: bool = False  # Track if '123' is active
+        self.is_shift_mode: bool = False
+        self.hand_states: dict = {}
+        self.controller = Controller()
+        self.detector = detector
 
     def draw_keyboard(self, frame: np.ndarray) -> np.ndarray:
         self.keyboard_image = frame.copy()
@@ -32,7 +37,7 @@ class OnScreenKeyboard:
                               2)
 
                 # Determine the label for the key
-                label = key[1] if self.is_numeric_mode else key[0]
+                label = key[2] if self.is_numeric_mode else key[0]
 
                 # Calculate the position to center the label in the key
                 font_scale = 1
@@ -47,10 +52,61 @@ class OnScreenKeyboard:
 
         return self.keyboard_image
 
-    def toggle_mode(self) -> None:
+    def toggle_numeric(self) -> None:
         """Toggle between alphanumeric and numeric/symbol mode"""
         self.is_numeric_mode = not self.is_numeric_mode
 
-    def key_press(self, hands: list) -> None:
+    def toggle_shift(self) -> None:
+        """Toggle between uppercase and lowercase characters"""
         pass
 
+    def key_press(self, hands: list) -> bool:
+        if hands:
+            for hand_id, hand in enumerate(hands):
+                landmark_list = hand["lmList"]
+                x_index, y_index = landmark_list[8][:2]
+                x_thumb, y_thumb = landmark_list[4][:2]
+
+                distance, _, _ = self.detector.findDistance(landmark_list[8][:2], landmark_list[4][:2], None)
+                pressed_key = self.check_key_pressed(x_index, y_index)
+
+                if hand_id not in self.hand_states:
+                    self.hand_states[hand_id] = False
+
+                if (distance < 30) and pressed_key:
+                    if not self.hand_states[hand_id]:  # Only press if key is not already pressed for this hand
+                        if pressed_key == '123' or pressed_key == 'ABC':
+                            self.toggle_numeric()
+                        elif pressed_key == 'space':
+                            self.controller.press(Key.space)
+                            self.controller.release(Key.space)
+                        elif pressed_key == 'enter':
+                            self.controller.press(Key.enter)
+                            self.controller.release(Key.enter)
+                        elif pressed_key == 'backspace':
+                            self.controller.press(Key.backspace)
+                            self.controller.release(Key.backspace)
+                        else:
+                            # Press the character key
+                            self.controller.press(pressed_key)
+                            self.controller.release(pressed_key)
+                        self.hand_states[hand_id] = True
+                        print(f"Pressed key: {pressed_key}")
+                    return True
+                else:  # If fingers are no longer close together, reset the state for this hand
+                    self.hand_states[hand_id] = False
+            else:  # If no hands detected, reset the state for all hands
+                self.hand_states.clear()
+            return False
+
+    def check_key_pressed(self, x_finger, y_finger) -> str:
+        for i, row in enumerate(self.keys):
+            for j, key in enumerate(row):
+                x = self.start_x + j * self.key_width
+                y = self.start_y + i * self.key_height
+                w, h = self.key_width, self.key_height
+
+                # Check if the finger is within the key boundaries
+                if (x <= x_finger <= x + w) and (y <= y_finger <= y + h):
+                    return key[2] if self.is_numeric_mode else key[0]
+        return ""
