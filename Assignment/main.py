@@ -1,8 +1,7 @@
-from Assignment.Keyboard.OnScreenKeyboard import OnScreenKeyboard
+from OnScreenKeyboard import OnScreenKeyboard
 from HandTracking import HandTracking
 from Camera import Camera
 import concurrent.futures
-import numpy as np
 import cv2
 
 
