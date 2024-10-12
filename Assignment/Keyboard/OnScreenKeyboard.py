@@ -10,9 +10,9 @@ class OnScreenKeyboard:
              ('z', 'Z', '6'), ('u', 'U', '7'), ('i', 'I', '8'), ('o', 'O', '9'), ('p', 'P', '0')]
     row_2 = [('a', 'A', '@'), ('s', 'S', '#'), ('d', 'D', '$'), ('f', 'F', '_'), ('g', 'G', '&'),
              ('h', 'H', '-'), ('j', 'J', '+'), ('k', 'K', '('), ('l', 'L', ')')]
-    row_3 = [('shift', '/'), ('y', 'Y', '*'), ('x', 'X', '"'), ('c', 'C', "'"), ('v', 'V', ':'),
+    row_3 = [('shift', 'shift', '/'), ('y', 'Y', '*'), ('x', 'X', '"'), ('c', 'C', "'"), ('v', 'V', ':'),
              ('b', 'B', ';'), ('n', 'N', '!'), ('m', 'M', '?'), ('backspace', 'backspace', 'backspace')]
-    row_4 = [('123', 'ABC'), ('space', 'space'), ('enter', 'enter')]
+    row_4 = [('123', '123', 'ABC'), ('space', 'space', 'space'), ('enter', 'enter', 'enter')]
 
     def __init__(self, detector: HandTracking().detector) -> None:
         self.keys: list[list[(str, str)]] = [self.row_1, self.row_2, self.row_3, self.row_4]
@@ -36,8 +36,12 @@ class OnScreenKeyboard:
                 cv2.rectangle(self.keyboard_image, (x, y), (x + self.key_width, y + self.key_height), (255, 255, 255),
                               2)
 
-                # Determine the label for the key
-                label = key[2] if self.is_numeric_mode else key[0]
+                if self.is_numeric_mode:
+                    label = key[2]
+                elif self.is_shift_mode and key[0] != 'shift':
+                    label = key[1]  # Use uppercase/special characters
+                else:
+                    label = key[0]  # Use lowercase characters
 
                 # Calculate the position to center the label in the key
                 font_scale = 1
@@ -58,7 +62,7 @@ class OnScreenKeyboard:
 
     def toggle_shift(self) -> None:
         """Toggle between uppercase and lowercase characters"""
-        pass
+        self.is_shift_mode = not self.is_shift_mode
 
     def key_press(self, hands: list) -> bool:
         if hands:
@@ -77,6 +81,8 @@ class OnScreenKeyboard:
                     if not self.hand_states[hand_id]:  # Only press if key is not already pressed for this hand
                         if pressed_key == '123' or pressed_key == 'ABC':
                             self.toggle_numeric()
+                        elif pressed_key == 'shift':
+                            self.toggle_shift()
                         elif pressed_key == 'space':
                             self.controller.press(Key.space)
                             self.controller.release(Key.space)
@@ -108,5 +114,10 @@ class OnScreenKeyboard:
 
                 # Check if the finger is within the key boundaries
                 if (x <= x_finger <= x + w) and (y <= y_finger <= y + h):
-                    return key[2] if self.is_numeric_mode else key[0]
+                    if self.is_numeric_mode:
+                        return key[2]  # Return numeric key
+                    elif self.is_shift_mode and key[0] not in ('shift', 'space', 'backspace', 'enter'):
+                        return key[1]  # Return uppercase key
+                    else:
+                        return key[0]  # Return lowercase key
         return ""
