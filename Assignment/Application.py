@@ -20,7 +20,7 @@ class Application:
     def __init__(self) -> None:
         self.window_name: str = "Computer Vision Assignment"
         self.is_running: bool = True
-        self.show_keyboard: bool = False
+        self.last_mouse_state: bool = False
         self.hwnd: any = None
         self.screen_width: int = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)
         self.screen_height: int = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
@@ -102,9 +102,12 @@ class Application:
             cv2.imshow(self.window_name, frame)
 
             mouse_x, mouse_y = win32api.GetCursorPos()
+            current_mouse_state: bool = win32api.GetAsyncKeyState(win32con.VK_LBUTTON) < 0  # true if button is pressed
 
-            if win32api.GetAsyncKeyState(win32con.VK_LBUTTON):  # Left Mouse Button
+            if current_mouse_state and not self.last_mouse_state:  # Left Mouse Button
                 self._handle_click(mouse_x, mouse_y, buttons)
+
+            self.last_mouse_state = current_mouse_state
 
             key = cv2.waitKey(1) & 0xFF
             if key == 27:  # ESC key
