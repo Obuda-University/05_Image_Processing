@@ -20,6 +20,7 @@ class Application:
     def __init__(self) -> None:
         self.window_name: str = "Computer Vision Assignment"
         self.is_running: bool = True
+        self.show_keyboard: bool = False
         self.hwnd: any = None
         self.screen_width: int = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)
         self.screen_height: int = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
@@ -36,7 +37,7 @@ class Application:
         # Set transparent color key
         win32gui.SetLayeredWindowAttributes(self.hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)
 
-    def _draw_buttons(self, frame: np.ndarray) -> None:
+    def _draw_buttons(self, frame: np.ndarray) -> dict:
         """Draw buttons on the frame"""
         radius: int = 20
         fill = cv2.FILLED
@@ -47,10 +48,34 @@ class Application:
             'Options': (x_pos, int(self.screen_height * 0.55), (0, 255, 0), 'O')  # might delete later
         }
 
+        button_rects: dict = {}  # Store button rectangles for click detection
+
         for i, (x, y, color, text) in button_positions.items():
             cv2.circle(frame, (x, y), radius, color, fill)
             cv2.putText(frame, text, (x - 10, y + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255),
                         2, cv2.LINE_AA)
+            button_rects[i] = (x, y, radius)
+
+        return button_rects
+
+    @staticmethod
+    def _is_inside_button(mouse_pos: tuple[int, int], button_pos: tuple[int, int], radius: int) -> bool:
+        """Check if mouse position is inside the button"""
+        return (mouse_pos[0] - button_pos[0]) ** 2 + (mouse_pos[1] - button_pos[1]) ** 2 <= radius ** 2
+
+    def _handle_click(self, mouse_x: int, mouse_y: int, buttons: dict) -> None:
+        """Handle mouse click events"""
+        for button_id, (x, y, radius) in buttons.items():
+            if self._is_inside_button((mouse_x, mouse_y), (x, y), radius):
+                if button_id == 'Exit':
+                    print("EXIT")
+                    self.stop()
+                elif button_id == 'Keyboard':
+                    print("KEYBOARD")
+                    # Show Keyboard
+                elif button_id == 'Options':
+                    print("MENU")
+                    # Show Menu
 
     def _create_window(self) -> None:
         """Create and configure the application window"""
@@ -59,6 +84,9 @@ class Application:
         cv2.resizeWindow(self.window_name, self.screen_width, self.screen_height)
 
         self._make_click_through()
+
+    def stop(self) -> None:
+        self.is_running = False
 
     def run(self) -> None:
         """Run the main application loop"""
@@ -69,13 +97,18 @@ class Application:
             frame: np.ndarray = np.zeros((self.screen_height, self.screen_width, 3), dtype=np.uint8)
             cv2.rectangle(frame, (0, 0), (self.screen_width - 1, self.screen_height - 1), (0, 0, 255), 2)
 
-            self._draw_buttons(frame)
+            buttons: dict = self._draw_buttons(frame)
 
             cv2.imshow(self.window_name, frame)
 
+            mouse_x, mouse_y = win32api.GetCursorPos()
+
+            if win32api.GetAsyncKeyState(win32con.VK_LBUTTON):  # Left Mouse Button
+                self._handle_click(mouse_x, mouse_y, buttons)
+
             key = cv2.waitKey(1) & 0xFF
             if key == 27:  # ESC key
-                self.is_running = False
+                self.stop()
 
             # Ensure the window stays on top
             win32gui.SetWindowPos(self.hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
