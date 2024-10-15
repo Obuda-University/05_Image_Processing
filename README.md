@@ -1,6 +1,11 @@
 # Assignment
 
 Using media pipe hand landmark model
+
+[Used Library for the hand](https://github.com/cvzone/cvzone?tab=readme-ov-file#hand-tracking-module)
+
+## For windows only usage: ctypes  library is used for mouse movement
+
 ![img.png](Resources/img.png)
 # Photoshop
 
