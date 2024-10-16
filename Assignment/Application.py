@@ -58,6 +58,13 @@ class Application:
 
         return button_rects
 
+    def _draw_camera_frame(self, frame: np.ndarray) -> cv2.rectangle:
+        width, height = 300, 300
+        top_left: tuple[int, int] = (self.screen_width - width - 10, self.screen_height - height - 10)
+        bottom_right: tuple[int, int] = (self.screen_width - 10, self.screen_height - 50)
+
+        return cv2.rectangle(frame, top_left, bottom_right, (255, 0, 0), 2)
+
     @staticmethod
     def _is_inside_button(mouse_pos: tuple[int, int], button_pos: tuple[int, int], radius: int) -> bool:
         """Check if mouse position is inside the button"""
@@ -97,6 +104,7 @@ class Application:
             frame: np.ndarray = np.zeros((self.screen_height, self.screen_width, 3), dtype=np.uint8)
             cv2.rectangle(frame, (0, 0), (self.screen_width - 1, self.screen_height - 1), (0, 0, 255), 2)
 
+            camera_frame: cv2.rectangle = self._draw_camera_frame(frame)
             buttons: dict = self._draw_buttons(frame)
 
             cv2.imshow(self.window_name, frame)
