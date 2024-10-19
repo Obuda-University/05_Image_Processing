@@ -1,12 +1,12 @@
-from HandTracking import HandTracking
+from cvzone.HandTrackingModule import HandDetector
 from Camera import Camera
 import concurrent.futures
 import numpy as np
-import cv2
 import win32gui
 import win32con
 import win32api
 import ctypes
+import cv2
 
 # Define Windows API Constants
 WS_EX_TRANSPARENT: hex = 0x00000020  # Create a transparent window and mouse events are passed through
@@ -18,6 +18,8 @@ user32 = ctypes.windll.user32  # Load the user32.dll
 user32.SetWindowLongPtrW.restype = ctypes.c_long
 user32.SetWindowLongPtrW.argtype = [ctypes.c_void_p, ctypes.c_int, ctypes.c_long]
 
+CAMERA_WIDTH, CAMERA_HEIGHT = 300, 300
+
 
 class Application:
     def __init__(self) -> None:
@@ -27,8 +29,9 @@ class Application:
         self.hwnd: any = None
         self.screen_width: int = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)
         self.screen_height: int = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
-        self.camera = Camera(300, 300)
-        self.hand_tracking = HandTracking()
+        self.camera = Camera(CAMERA_WIDTH, CAMERA_HEIGHT, 0, 60)
+        self.camera.set_fps(60)
+        self.detector = HandDetector(staticMode=False, modelComplexity=1, maxHands=2, detectionCon=0.8, minTrackCon=0.5)
 
     def _make_click_through(self) -> None:
         """Make the window click-through by modifying its style"""
@@ -126,7 +129,6 @@ class Application:
             if success and camera_frame is not None:
                 self.camera.calc_frame_rate(camera_frame)
 
-                hands, processed_frame = self.hand_tracking.detect_hands(camera_frame)
 
                 self._draw_camera_frame(frame, camera_frame)
             else:

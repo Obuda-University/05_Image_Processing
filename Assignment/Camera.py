@@ -5,10 +5,11 @@ import cv2
 
 
 class Camera:
-    def __init__(self, width: int = 1280, height: int = 720, camera_id: int = 0) -> None:
+    def __init__(self, width: int = 1280, height: int = 720, camera_id: int = 0, fps: int = 30) -> None:
         self.width: int = width
         self.height: int = height
         self.camera_id: int = camera_id
+        self.fps: int = fps
         self.cap = cv2.VideoCapture(camera_id)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
@@ -21,6 +22,12 @@ class Camera:
             if not self.cap.isOpened():
                 self.cap.open(self.camera_id)
             return self.cap.isOpened()
+
+    def set_fps(self, fps: int) -> None:
+        """Sets the camera's FPS"""
+        with self.lock:
+            self.fps = fps
+            self.cap.set(cv2.CAP_PROP_FPS, self.fps)
 
     def read_frame(self) -> tuple[bool, np.ndarray]:
         """Reads the frame from the camera"""
