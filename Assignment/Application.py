@@ -122,6 +122,7 @@ class Application:
 
             success, camera_frame = self._camera()
             if success:
+                self.camera.calc_frame_rate(camera_frame)
                 self._draw_camera_frame(frame, camera_frame)
 
             buttons: dict = self._draw_buttons(frame)

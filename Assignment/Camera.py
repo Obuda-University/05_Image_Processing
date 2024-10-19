@@ -1,5 +1,6 @@
 import numpy as np
 import threading
+import time
 import cv2
 
 
@@ -11,6 +12,7 @@ class Camera:
         self.cap = cv2.VideoCapture(camera_id)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        self._previous_time = time.time()
         self.lock = threading.Lock()
 
     def initialize(self) ->bool:
@@ -47,3 +49,10 @@ class Camera:
     def process_frame(frame: np.ndarray) -> np.ndarray:
         """Optional frame processing, can be overridden or modified as needed"""
         return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    def calc_frame_rate(self, frame: np.ndarray) -> None:
+        """Calculates and displays the frame rate"""
+        current_time = time.time()
+        fps: float = 1 / (current_time - self._previous_time)
+        self._previous_time = current_time
+        cv2.putText(frame, f'FPS: {int(fps)}', (10, 20), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 1)
