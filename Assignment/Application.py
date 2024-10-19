@@ -1,3 +1,5 @@
+from Camera import Camera
+import concurrent.futures
 import numpy as np
 import cv2
 import win32gui
@@ -24,6 +26,7 @@ class Application:
         self.hwnd: any = None
         self.screen_width: int = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)
         self.screen_height: int = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
+        self.camera = Camera(300, 300)
 
     def _make_click_through(self) -> None:
         """Make the window click-through by modifying its style"""
@@ -58,12 +61,18 @@ class Application:
 
         return button_rects
 
-    def _draw_camera_frame(self, frame: np.ndarray) -> cv2.rectangle:
-        width, height = 300, 300
-        top_left: tuple[int, int] = (self.screen_width - width - 10, self.screen_height - height - 10)
-        bottom_right: tuple[int, int] = (self.screen_width - 10, self.screen_height - 50)
+    def _draw_camera_frame(self, frame: np.ndarray, camera_frame: np.ndarray) -> None:
+        if camera_frame is not None:
+            camera_height, camera_width, _ = camera_frame.shape
+            top_left = (self.screen_width - camera_width, self.screen_height - camera_height)
+            bottom_right = (self.screen_width, self.screen_height)
+            frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = camera_frame
 
-        return cv2.rectangle(frame, top_left, bottom_right, (255, 0, 0), 2)
+    def _camera(self) -> tuple[bool, np.ndarray]:
+        """Fetch the camera frame."""
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            frame_future = executor.submit(self.camera.read_frame)
+            return frame_future.result()
 
     @staticmethod
     def _is_inside_button(mouse_pos: tuple[int, int], button_pos: tuple[int, int], radius: int) -> bool:
@@ -93,6 +102,7 @@ class Application:
         self._make_click_through()
 
     def stop(self) -> None:
+        self.camera.release()
         self.is_running = False
 
     def run(self) -> None:
@@ -104,7 +114,10 @@ class Application:
             frame: np.ndarray = np.zeros((self.screen_height, self.screen_width, 3), dtype=np.uint8)
             cv2.rectangle(frame, (0, 0), (self.screen_width - 1, self.screen_height - 1), (0, 0, 255), 2)
 
-            camera_frame: cv2.rectangle = self._draw_camera_frame(frame)
+            success, camera_frame = self._camera()
+            if success:
+                self._draw_camera_frame(frame, camera_frame)
+
             buttons: dict = self._draw_buttons(frame)
 
             cv2.imshow(self.window_name, frame)
