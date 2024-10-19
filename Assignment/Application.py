@@ -1,3 +1,4 @@
+from HandTracking import HandTracking
 from Camera import Camera
 import concurrent.futures
 import numpy as np
@@ -27,6 +28,7 @@ class Application:
         self.screen_width: int = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)
         self.screen_height: int = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
         self.camera = Camera(300, 300)
+        self.hand_tracking = HandTracking()
 
     def _make_click_through(self) -> None:
         """Make the window click-through by modifying its style"""
@@ -121,9 +123,14 @@ class Application:
             cv2.rectangle(frame, (0, 0), (self.screen_width - 1, self.screen_height - 1), (0, 0, 255), 2)
 
             success, camera_frame = self._camera()
-            if success:
+            if success and camera_frame is not None:
                 self.camera.calc_frame_rate(camera_frame)
+
+                hands, processed_frame = self.hand_tracking.detect_hands(camera_frame)
+
                 self._draw_camera_frame(frame, camera_frame)
+            else:
+                print("[ERROR]: Failed to read camera frame")
 
             buttons: dict = self._draw_buttons(frame)
 
