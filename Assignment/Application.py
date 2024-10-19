@@ -99,11 +99,17 @@ class Application:
         cv2.setWindowProperty(self.window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
         cv2.resizeWindow(self.window_name, self.screen_width, self.screen_height)
 
-        self._make_click_through()
+        self.hwnd = win32gui.FindWindow(None, self.window_name)
+
+        if self.hwnd:
+            self._make_click_through()
+        else:
+            print("[ERROR]: Failed to retrieve window handle.")
 
     def stop(self) -> None:
         self.camera.release()
         self.is_running = False
+        self.hwnd = None
 
     def run(self) -> None:
         """Run the main application loop"""
@@ -135,8 +141,9 @@ class Application:
                 self.stop()
 
             # Ensure the window stays on top
-            win32gui.SetWindowPos(self.hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
-                                  win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+            if self.hwnd is not None and win32gui.IsWindow(self.hwnd):
+                win32gui.SetWindowPos(self.hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
+                                      win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
 
         cv2.destroyAllWindows()
 
