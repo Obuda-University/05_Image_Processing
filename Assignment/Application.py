@@ -116,6 +116,21 @@ class Application:
         self.is_running = False
         self.hwnd = None
 
+    def _is_both_hands_detected(self, hands) -> [bool, list[any, any]]:
+        if len(hands) == 2:
+            hand_1 = hands[0]
+            landmark_list_1 = hand_1["lmList"]
+            hand_type_1 = hand_1["type"]
+
+            hand_2 = hands[1]
+            landmark_list_2 = hand_2["lmList"]
+            hand_type_2 = hand_2["type"]
+
+            return True, [hand_1, hand_2]
+        else:
+            return False, []
+
+
     def run(self) -> None:
         """Run the main application loop"""
         self._create_window()
@@ -129,6 +144,25 @@ class Application:
             if success and camera_frame is not None:
                 self.camera.calc_frame_rate(camera_frame)
 
+                hands, processed_frame = self.detector.findHands(camera_frame, flipType=False)
+
+                if hands:
+                    hand = hands[0]
+                    lm_list = hand["lmList"]
+
+                    x1, y1 = lm_list[8][1:]  # Index finger
+                    x2, y2 = lm_list[12][1:]  # Middle finger
+
+                    fingers = self.detector.fingersUp(hand)
+                    print(fingers)
+
+                    if fingers[1] == 1:
+                        cv2.circle(processed_frame, (x1, y1), 15, (255, 0, 255), cv2.FILLED)
+
+                    # Index finger up, middle finger down
+                    if (fingers[1] == 1) and (fingers[2] == 0):
+                        x3 = np.interp(x1, (0, CAMERA_WIDTH), (0, self.screen_width))
+                        y3 = np.interp(y1, (0, CAMERA_HEIGHT), (0, self.screen_height))
 
                 self._draw_camera_frame(frame, camera_frame)
             else:
