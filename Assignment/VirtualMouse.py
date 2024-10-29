@@ -22,6 +22,9 @@ class VirtualMouse:
         self.screen_height = 1080
         self.frame_reduction = 100
         self.is_mouse_down = False
+        self.smoothening_ratio = 6
+        self.prev_location_x, self.prev_location_y = 0, 0
+        self.curr_location_x, self.curr_location_y = 0, 0
 
     def get_frame(self) -> np.ndarray:
         try:
@@ -44,8 +47,16 @@ class VirtualMouse:
         y_screen = int(np.interp(index_finger[1],
                                  (self.frame_reduction, self.CAMERA_HEIGHT - self.frame_reduction),
                                  (0, self.screen_height)))
-        ctypes.windll.user32.SetCursorPos(x_screen, y_screen)
 
+        self.curr_location_x = int(self.prev_location_x + (x_screen - self.prev_location_x) / self.smoothening_ratio)
+        self.curr_location_y = int(self.prev_location_y + (y_screen - self.prev_location_y) / self.smoothening_ratio)
+
+        ctypes.windll.user32.SetCursorPos(self.curr_location_x, self.curr_location_y)
+        self.prev_location_x, self.prev_location_y = self.curr_location_x, self.curr_location_y
+
+    # TODO: Create single-click
+    # TODO: Create double-click
+    # TODO: Create drag? [hold mouse button]
     def click_mouse(self, thumb_state: int) -> None:
         if thumb_state == 0 and not self.is_mouse_down:
             ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_DOWN, 0, 0, 0, 0)  # Mouse down
@@ -90,11 +101,6 @@ class VirtualMouse:
         self.cap.release()
         cv2.destroyAllWindows()
 
-    # TODO: Check the gesture
-    # TODO: Smoothen values
-    # TODO: Clicking mode [predefined gesture]
-    # TODO: Find distance [for gesture checking]
-    # TODO: Click mouse
 
 if __name__ == '__main__':
     app = VirtualMouse()
