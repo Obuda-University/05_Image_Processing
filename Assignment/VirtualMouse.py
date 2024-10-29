@@ -19,6 +19,25 @@ class VirtualMouse:
         self.screen_height = 1080
         self.frame_reduction = 100
 
+    def get_frame(self) -> np.ndarray:
+        try:
+            ret, frame = self.cap.read()
+            frame = cv2.flip(frame, 1)
+            return frame
+        except Exception as e:
+            print(e)
+
+    def run(self) -> None:
+        while True:
+            frame = self.get_frame()
+            #cv2.putText(frame, str(self.get_frame_rate()), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3, (128, 128, 128), 3)
+            #self.detect_hand(frame)
+
+            cv2.imshow('Frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+
     # TODO: Get the fingers [predefined gesture]
     # TODO: Check the gesture
     # TODO: Moving mode
