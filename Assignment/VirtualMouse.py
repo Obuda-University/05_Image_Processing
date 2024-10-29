@@ -44,6 +44,11 @@ class VirtualMouse:
             x2, y2 = lm_list[4][:2]  # Thumb's x and y coordinates on camera frame
 
             fingers = self.detector.fingersUp(hand)
+            if fingers[0] == 0:
+                fingers[0] = 1
+            else:
+                fingers[0] = 0
+            print(fingers)
 
             cv2.rectangle(img, (self.frame_reduction, self.frame_reduction),
                           (self.CAMERA_WIDTH - self.frame_reduction, self.CAMERA_HEIGHT - self.frame_reduction),
@@ -72,10 +77,7 @@ class VirtualMouse:
                 break
 
     # TODO: Check the gesture
-    # TODO: Moving mode
-    # TODO: Convert coordinates
     # TODO: Smoothen values
-    # TODO: Move mouse
     # TODO: Clicking mode [predefined gesture]
     # TODO: Find distance [for gesture checking]
     # TODO: Click mouse
