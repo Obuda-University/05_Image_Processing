@@ -79,6 +79,8 @@ class VirtualMouse:
             cv2.imshow('Frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+        self.cap.release()
+        cv2.destroyAllWindows()
 
     # TODO: Check the gesture
     # TODO: Smoothen values
