@@ -33,11 +33,22 @@ class VirtualMouse:
         self.present_time = current_time
         return fps
 
+    def detect_hand(self, img: np.ndarray) -> None:
+        hands, _ = self.detector.findHands(img, flipType=False)
+
+        if hands:
+            hand = hands[0]
+            lm_list = hand["lmList"]
+
+            x1, y1 = lm_list[8][:2]  # Index finger's x and y coordinates on camera frame
+
+            x2, y2 = lm_list[4][:2]  # Thumb's x and y coordinates on camera frame
+
     def run(self) -> None:
         while True:
             frame = self.get_frame()
             cv2.putText(frame, str(self.get_frame_rate()), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3, (128, 128, 128), 3)
-            #self.detect_hand(frame)
+            self.detect_hand(frame)
 
             cv2.imshow('Frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
