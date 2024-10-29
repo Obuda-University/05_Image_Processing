@@ -5,6 +5,9 @@ import ctypes
 import time
 import cv2
 
+# Constants
+MOUSE_EVENT_LEFT_DOWN = 0x0002  # Left button down
+MOUSE_EVENT_LEFT_UP = 0x0004    # Left button up
 
 class VirtualMouse:
     def __init__(self) -> None:
@@ -18,6 +21,7 @@ class VirtualMouse:
         self.screen_width = 1920
         self.screen_height = 1080
         self.frame_reduction = 100
+        self.is_mouse_down = False
 
     def get_frame(self) -> np.ndarray:
         try:
@@ -33,7 +37,7 @@ class VirtualMouse:
         self.present_time = current_time
         return fps
 
-    def move_mouse(self, index_finger) -> None:
+    def move_mouse(self, index_finger: list[int, int]) -> None:
         x_screen = int(np.interp(index_finger[0],
                                  (self.frame_reduction, self.CAMERA_WIDTH - self.frame_reduction),
                                  (0, self.screen_width)))
@@ -41,6 +45,14 @@ class VirtualMouse:
                                  (self.frame_reduction, self.CAMERA_HEIGHT - self.frame_reduction),
                                  (0, self.screen_height)))
         ctypes.windll.user32.SetCursorPos(x_screen, y_screen)
+
+    def click_mouse(self, thumb_state: int) -> None:
+        if thumb_state == 0 and not self.is_mouse_down:
+            ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_DOWN, 0, 0, 0, 0)  # Mouse down
+            self.is_mouse_down = True
+        elif thumb_state == 1 and self.is_mouse_down:
+            ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_UP, 0, 0, 0, 0)  # Mouse up
+            self.is_mouse_down = False
 
     def detect_hand(self, img: np.ndarray) -> None:
         hands, _ = self.detector.findHands(img, flipType=False)
@@ -64,11 +76,7 @@ class VirtualMouse:
             if move_mode:  # Move mouse
                 self.move_mouse(index)
 
-            # if pointing with the middle finger and the others are closed
-            click_mode: bool = fingers[0] == 0 and fingers[1] == 1 and all(x == 0 for x in fingers[2:])
-            if click_mode:  # Click mouse
-                length, frame, _ = self.detector.findDistance(index, thumb, img)
-                #if length < 30:
+                self.click_mouse(fingers[0])
 
     def run(self) -> None:
         while True:
