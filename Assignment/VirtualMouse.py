@@ -27,18 +27,22 @@ class VirtualMouse:
         except Exception as e:
             print(e)
 
+    def get_frame_rate(self) -> int:
+        current_time = time.time()
+        fps = int(1 / (current_time - self.present_time))
+        self.present_time = current_time
+        return fps
+
     def run(self) -> None:
         while True:
             frame = self.get_frame()
-            #cv2.putText(frame, str(self.get_frame_rate()), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3, (128, 128, 128), 3)
+            cv2.putText(frame, str(self.get_frame_rate()), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3, (128, 128, 128), 3)
             #self.detect_hand(frame)
 
             cv2.imshow('Frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
-
-    # TODO: Get the fingers [predefined gesture]
     # TODO: Check the gesture
     # TODO: Moving mode
     # TODO: Convert coordinates
