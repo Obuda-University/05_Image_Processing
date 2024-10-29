@@ -41,8 +41,25 @@ class VirtualMouse:
             lm_list = hand["lmList"]
 
             x1, y1 = lm_list[8][:2]  # Index finger's x and y coordinates on camera frame
-
             x2, y2 = lm_list[4][:2]  # Thumb's x and y coordinates on camera frame
+
+            fingers = self.detector.fingersUp(hand)
+
+            cv2.rectangle(img, (self.frame_reduction, self.frame_reduction),
+                          (self.CAMERA_WIDTH - self.frame_reduction, self.CAMERA_HEIGHT - self.frame_reduction),
+                          (255, 0, 255), 2)
+
+            if fingers[1] == 1 and fingers[0] == 1:  # Move mouse
+                x_screen = int(np.interp(x1,
+                                         (self.frame_reduction, self.CAMERA_WIDTH - self.frame_reduction), (0, self.screen_width)))
+                y_screen = int(np.interp(y1,
+                                         (self.frame_reduction, self.CAMERA_HEIGHT - self.frame_reduction), (0, self.screen_height)))
+                ctypes.windll.user32.SetCursorPos(x_screen, y_screen)
+
+            # if pointing with the middle finger and the others are closed
+            #if fingers[1] == 1 and all(x == 0 for i, x in enumerate(fingers) if i != 1):  # Click mouse
+            #    length, frame, _ = self.detector.findDistance((x1, y1), (x2, y2), img)
+                # if length <
 
     def run(self) -> None:
         while True:
