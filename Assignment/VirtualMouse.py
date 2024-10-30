@@ -21,10 +21,13 @@ class VirtualMouse:
         self.screen_width = 1920
         self.screen_height = 1080
         self.frame_reduction = 100
-        self.is_mouse_down = False
         self.smoothening_ratio = 6
         self.prev_location_x, self.prev_location_y = 0, 0
         self.curr_location_x, self.curr_location_y = 0, 0
+        self.is_mouse_down = False
+        self.last_click_time = 0
+        self.click_cooldown = 0.3
+        self.thumb_prev_state = None
 
     def get_frame(self) -> np.ndarray:
         try:
@@ -54,16 +57,35 @@ class VirtualMouse:
         ctypes.windll.user32.SetCursorPos(self.curr_location_x, self.curr_location_y)
         self.prev_location_x, self.prev_location_y = self.curr_location_x, self.curr_location_y
 
-    # TODO: Create single-click
-    # TODO: Create double-click
-    # TODO: Create drag? [hold mouse button]
-    def click_mouse(self, thumb_state: int) -> None:
-        if thumb_state == 0 and not self.is_mouse_down:
-            ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_DOWN, 0, 0, 0, 0)  # Mouse down
-            self.is_mouse_down = True
-        elif thumb_state == 1 and self.is_mouse_down:
-            ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_UP, 0, 0, 0, 0)  # Mouse up
+    def click_double(self, index_finger_status: int, middle_finger_status: int) -> None:
+        if index_finger_status == 1 and middle_finger_status == 1 and ((self.present_time - self.last_click_time) > self.click_cooldown):
+            ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_DOWN, 0, 0, 0, 0)
+            ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_UP, 0, 0, 0, 0)
+            ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_DOWN, 0, 0, 0, 0)
+            ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_UP, 0, 0, 0, 0)
+            self.last_click_time = self.present_time
+
+    def click_hold(self, thumb_status: int) -> None:
+        current_time = time.time()
+
+        if self.thumb_prev_state is None:
+            self.thumb_prev_state = thumb_status
+            return
+
+        if self.thumb_prev_state == 0 and thumb_status == 1:
+            self.last_click_time = current_time
             self.is_mouse_down = False
+        elif self.thumb_prev_state == 1 and thumb_status == 0:
+            if (current_time - self.last_click_time) <= self.click_cooldown:
+                ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_DOWN, 0, 0, 0, 0)
+                ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_UP, 0, 0, 0, 0)
+            else:
+                ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_UP, 0, 0, 0, 0)
+        elif thumb_status == 1 and not self.is_mouse_down:
+            if (current_time - self.last_click_time) > self.click_cooldown:
+                ctypes.windll.user32.mouse_event(MOUSE_EVENT_LEFT_DOWN, 0, 0, 0, 0)
+                self.is_mouse_down = True
+        self.thumb_prev_state = thumb_status
 
     def detect_hand(self, img: np.ndarray) -> None:
         hands, _ = self.detector.findHands(img, flipType=False)
@@ -86,8 +108,9 @@ class VirtualMouse:
             move_mode: bool = fingers[1] == 1 and all(x == 0 for x in fingers[2:])
             if move_mode:  # Move mouse
                 self.move_mouse(index)
-
-                self.click_mouse(fingers[0])
+            # self.click_singe(fingers[0])
+            self.click_double(fingers[1], fingers[2])
+            self.click_hold(fingers[0])
 
     def run(self) -> None:
         while True:
