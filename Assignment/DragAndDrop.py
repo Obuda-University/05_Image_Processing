@@ -31,6 +31,23 @@ class DragAndDrop:
         self.time_now = current_time
         return fps
 
+    def detect_hand(self, img: np.ndarray) -> tuple[int, int, int]:
+        """Detect hand(s) and control mouse based on gestures"""
+        hands, _ = self.detector.findHands(img, flipType=False)
+        color = (255, 0, 255)
+        if hands:
+            hand = hands[0]
+            lm_list = hand["lmList"]
+
+            index_finger_x, index_finger_y = lm_list[8][0], lm_list[8][1]
+            if (100 < index_finger_x < 300) and (100 < index_finger_y < 300):
+                color = (0, 255, 0)
+        return color
+
+    @staticmethod
+    def draw_rectangle(frame: np.ndarray, color: tuple[int, int, int] = (255, 0, 255)) -> cv2.rectangle:
+        return cv2.rectangle(frame, (100, 100), (300, 300), color, cv2.FILLED)
+
     def run(self) -> None:
         while True:
             frame = self.get_frame()
@@ -38,6 +55,9 @@ class DragAndDrop:
                 break
 
             cv2.putText(frame, str(self.get_frame_rate()), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3, (128, 128, 128), 3)
+
+            color = self.detect_hand(frame)
+            self.draw_rectangle(frame, color)
 
             cv2.imshow('Frame', frame)
 
