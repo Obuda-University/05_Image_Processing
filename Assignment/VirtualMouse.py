@@ -4,26 +4,29 @@ import ctypes
 import time
 import cv2
 
-# Constants
+
 class Config:
     CAMERA_WIDTH, CAMERA_HEIGHT = 640, 480
     SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
-    FRAME_REDUCTION = 100
+    FRAME_REDUCTION = 0
     SMOOTHENING_RATIO = 6
     CLICK_COOLDOWN = 0.3
     MOUSE_EVENT_LEFT_DOWN = 0x0002  # Left button down
     MOUSE_EVENT_LEFT_UP = 0x0004    # Left button up
 
+
 # Utils
-def _screen_coordinates(x, y) -> [int, int]:
+def _screen_coordinates(x, y, cam_width: int, cam_height: int) -> [int, int]:
     """Map camera coordinates to screen coordinates with frame reduction applied"""
-    x_screen = int(np.interp(x, (Config.FRAME_REDUCTION, Config.CAMERA_WIDTH - Config.FRAME_REDUCTION), (0, Config.SCREEN_WIDTH)))
-    y_screen = int(np.interp(y, (Config.FRAME_REDUCTION, Config.CAMERA_HEIGHT - Config.FRAME_REDUCTION), (0, Config.SCREEN_HEIGHT)))
+    x_screen = int(np.interp(x, (Config.FRAME_REDUCTION, cam_width - Config.FRAME_REDUCTION), (0, Config.SCREEN_WIDTH)))
+    y_screen = int(np.interp(y, (Config.FRAME_REDUCTION, cam_height - Config.FRAME_REDUCTION), (0, Config.SCREEN_HEIGHT)))
     return x_screen, y_screen
+
 
 def _is_cooldown_elapsed(last_action_time: float, cooldown: float = Config.CLICK_COOLDOWN) -> bool:
     """Checks if the predefined cooldown period has elapsed since the last action"""
     return (time.time() - last_action_time) > cooldown
+
 
 def _click_event(down: bool = True) -> None:
     """Perform mouse pressing action"""
@@ -32,6 +35,7 @@ def _click_event(down: bool = True) -> None:
         ctypes.windll.user32.mouse_event(event, 0, 0, 0, 0)
     except Exception as e:
         print(e)
+
 
 class _ClickHandler:
     def __init__(self) -> None:
@@ -111,9 +115,9 @@ class VirtualMouse:
         self.time_now = current_time
         return fps
 
-    def _move_mouse(self, index_finger: list[int, int]) -> None:
+    def _move_mouse(self, index_finger: list[int, int], rect_coords: tuple) -> None:
         """Move mouse cursor based on the index finger's position"""
-        x_screen, y_screen = _screen_coordinates(index_finger[0], index_finger[1])
+        x_screen, y_screen = _screen_coordinates(index_finger[0], index_finger[1], rect_coords[1], rect_coords[3])
         self._curr_location_x = int(self._prev_location_x + (x_screen - self._prev_location_x) / Config.SMOOTHENING_RATIO)
         self._curr_location_y = int(self._prev_location_y + (y_screen - self._prev_location_y) / Config.SMOOTHENING_RATIO)
         ctypes.windll.user32.SetCursorPos(self._curr_location_x, self._curr_location_y)
@@ -128,6 +132,17 @@ class VirtualMouse:
             self._last_click_time = current_time
         self._click.process_thumb_gesture(thumb_up)
 
+    @staticmethod
+    def draw_rectangle(img: np.ndarray, cam_width: int, cam_height: int) -> tuple:
+        """Draw a smaller rectangle in the middle of the frame."""
+        rect_width, rect_height = 240, 135
+        x1 = (cam_width // 2) - (rect_width // 2)
+        y1 = (cam_height // 2) - (rect_height // 2)
+        x2 = x1 + rect_width
+        y2 = y1 + rect_height
+        cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 2)
+        return x1, x2, y1, y2
+
     def detect_hand(self, img: np.ndarray) -> None:
         """Detect hand(s) and control mouse based on gestures"""
         hands, _ = self.detector.findHands(img, flipType=False)
@@ -135,17 +150,16 @@ class VirtualMouse:
             hand = hands[0]
             lm_list = hand["lmList"]
             fingers: list[int] = self.detector.fingersUp(hand)
-            fingers[0] = 1 if fingers[0] == 0 else 0  # Fix thumb detection issue
+            fingers[0] = 1 if fingers[0] == 0 else 0  # Fix thumb detection
+
             index: list[int, int] = lm_list[8][:2]  # Index finger's x and y coordinates on camera frame
             # if index is up and the rest is down, except the thumb [for click mode]
             move_mode: bool = fingers[1] == 1 and all(x == 0 for x in fingers[2:])
 
-            cv2.rectangle(img, (Config.FRAME_REDUCTION, Config.FRAME_REDUCTION),
-                          (Config.CAMERA_WIDTH - Config.FRAME_REDUCTION, Config.CAMERA_HEIGHT - Config.FRAME_REDUCTION),
-                          (255, 0, 255), 2)
+            rect_coords = self.draw_rectangle(img, img.shape[1], img.shape[0])
 
             if move_mode:
-                self._move_mouse(index)
+                self._move_mouse(index, rect_coords)
             self._process_clicks(fingers)
 
     def run(self) -> None:
