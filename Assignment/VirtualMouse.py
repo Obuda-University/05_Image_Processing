@@ -6,9 +6,7 @@ import cv2
 
 
 class Config:
-    CAMERA_WIDTH, CAMERA_HEIGHT = 640, 480
     SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
-    FRAME_REDUCTION = 0
     SMOOTHENING_RATIO = 6
     CLICK_COOLDOWN = 0.3
     MOUSE_EVENT_LEFT_DOWN = 0x0002  # Left button down
@@ -93,28 +91,12 @@ class _ClickHandler:
 
 class VirtualMouse:
     def __init__(self) -> None:
-        self.time_now = 0
-        self.cap = cv2.VideoCapture(0)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, Config.CAMERA_WIDTH)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, Config.CAMERA_HEIGHT)
         self.detector = HandDetector(staticMode=False, modelComplexity=0, maxHands=2, detectionCon=0.8, minTrackCon=0.5)
         self._prev_location_x, self._prev_location_y = 0, 0
         self._curr_location_x, self._curr_location_y = 0, 0
         self._last_click_time = 0
         self._click = _ClickHandler()
         self.rect_coords = None
-
-    def get_frame(self) -> [np.ndarray, None]:
-        """Capture and flip the camera frame"""
-        ret, frame = self.cap.read()
-        return cv2.flip(frame, 1) if ret else None
-
-    def get_frame_rate(self) -> int:
-        """Calculate frame per second"""
-        current_time = time.time()
-        fps = int(1 / (current_time - self.time_now))
-        self.time_now = current_time
-        return fps
 
     def _move_mouse(self, index_finger: list[int, int]) -> None:
         """Move mouse cursor based on the index finger's position"""
@@ -175,23 +157,3 @@ class VirtualMouse:
             if move_mode:
                 self._move_mouse(index)
             self._process_clicks(fingers)
-
-    def run(self) -> None:
-        while True:
-            frame = self.get_frame()
-            if frame is None:
-                break
-
-            cv2.putText(frame, str(self.get_frame_rate()), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3, (128, 128, 128), 3)
-            self.detect_hand(frame)
-            cv2.imshow('Frame', frame)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        self.cap.release()
-        cv2.destroyAllWindows()
-
-
-if __name__ == '__main__':  # Entry point
-    app = VirtualMouse()
-    app.run()
