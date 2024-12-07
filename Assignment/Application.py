@@ -1,4 +1,5 @@
 from cvzone.HandTrackingModule import HandDetector
+from OnScreenKeyboard import OnScreenKeyboard
 from VirtualMouse import VirtualMouse
 from Camera import Camera
 import concurrent.futures
@@ -33,18 +34,24 @@ class Application:
         self.camera.set_fps(60)
         self.detector = HandDetector(staticMode=False, modelComplexity=1, maxHands=2, detectionCon=0.8, minTrackCon=0.5)
         self.mouse = VirtualMouse()
+        self.kbd = OnScreenKeyboard()
 
-    def _make_click_through(self) -> None:
+    def _make_click_through(self, enable: bool) -> None:
         """Make the window click-through by modifying its style"""
-        self.hwnd = win32gui.FindWindow(None, self.window_name)  # Get the window handle
+        if self.hwnd is None:
+            self.hwnd = win32gui.FindWindow(None, self.window_name)  # Get the window handle
 
-        # Set the window style to layered, transparent, and topmost
-        styles = win32gui.GetWindowLong(self.hwnd, GWL_EX_STYLE)
-        styles = styles | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST
-        user32.SetWindowLongPtrW(self.hwnd, GWL_EX_STYLE, styles)
+        if self.hwnd:
+            # Set the window style to layered, transparent, and topmost
+            styles = win32gui.GetWindowLong(self.hwnd, GWL_EX_STYLE)
+            if enable:
+                styles = styles | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST
+            else:
+                styles = styles & ~WS_EX_TRANSPARENT
 
-        # Set transparent color key
-        win32gui.SetLayeredWindowAttributes(self.hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)
+            user32.SetWindowLongPtrW(self.hwnd, GWL_EX_STYLE, styles)
+            # Set transparent color key
+            win32gui.SetLayeredWindowAttributes(self.hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)
 
     def _draw_buttons(self, frame: np.ndarray) -> dict:
         """Draw buttons on the frame"""
@@ -90,11 +97,9 @@ class Application:
         for button_id, (x, y, radius) in buttons.items():
             if self._is_inside_button((mouse_x, mouse_y), (x, y), radius):
                 if button_id == 'Exit':
-                    print("EXIT")
                     self.stop()
                 elif button_id == 'Keyboard':
-                    print("KEYBOARD")
-                    # Show Keyboard
+                    self.kbd.is_visible = not self.kbd.is_visible
                 elif button_id == 'Options':
                     print("MENU")
                     # Show Menu
@@ -108,7 +113,7 @@ class Application:
         self.hwnd = win32gui.FindWindow(None, self.window_name)
 
         if self.hwnd:
-            self._make_click_through()
+            self._make_click_through(True)
         else:
             print("[ERROR]: Failed to retrieve window handle.")
 
@@ -137,6 +142,17 @@ class Application:
                 mouse_x, mouse_y = win32api.GetCursorPos()
                 if clicked[0] is True:
                     self._handle_click(mouse_x, mouse_y, buttons)
+
+                    if self.kbd.is_visible:
+                        self.kbd.key_press(mouse_x, mouse_y)
+
+                if self.kbd.is_visible:
+                    kbd_frame = self.kbd.draw_keyboard(frame)
+                    mask = (kbd_frame > 0).any(axis=2)
+                    frame[mask] = kbd_frame[mask]
+                    # self._make_click_through(False)
+                # else:
+                    # self._make_click_through(True)
             else:
                 print("[ERROR]: Failed to read camera frame")
 

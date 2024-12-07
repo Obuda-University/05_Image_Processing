@@ -14,7 +14,7 @@ class OnScreenKeyboard:
              ('b', 'B', ';'), ('n', 'N', '!'), ('m', 'M', '?'), ('backspace', 'backspace', 'backspace')]
     row_4 = [('123', '123', 'ABC'), ('space', 'space', 'space'), ('enter', 'enter', 'enter')]
 
-    def __init__(self, detector: HandTracking().detector) -> None:
+    def __init__(self) -> None:
         self.keys: list[list[(str, str)]] = [self.row_1, self.row_2, self.row_3, self.row_4]
         self.key_width, self.key_height = 100, 100
         self.start_x, self.start_y = 50, 50
@@ -23,10 +23,19 @@ class OnScreenKeyboard:
         self.is_shift_mode: bool = False  # Track if 'shift' is active
         self.hand_states: dict = {}
         self.controller = Controller()
-        self.detector = detector
+        self.is_visible = False
         self.executor = ThreadPoolExecutor(max_workers=4)
 
     def draw_keyboard(self, frame: np.ndarray) -> np.ndarray:
+        frame_height, frame_width, _ = frame.shape
+        num_rows = len(self.keys)
+        num_cols = max(len(row) for row in self.keys)
+
+        keyboard_width = num_cols * self.key_width
+        keyboard_height = num_rows * self.key_height
+        self.start_x = (frame_width - keyboard_width) // 2
+        self.start_y = (frame_height - keyboard_height) // 2
+
         self.keyboard_image: np.ndarray = frame.copy()
 
         def draw_row(row_data):
@@ -64,35 +73,30 @@ class OnScreenKeyboard:
         """Toggle between uppercase and lowercase characters"""
         self.is_shift_mode: bool = not self.is_shift_mode
 
-    def key_press(self, hands: list) -> bool:
-        if not hands:
-            self.hand_states.clear()
-            return False
+    def key_press(self, mouse_x: int, mouse_y: int) -> bool:
+        """Detect key press based on mouse click position"""
+        pressed_key = self.check_key_pressed(mouse_x, mouse_y)
+        if pressed_key:
+            self.handle_key_press(pressed_key)
+            return True
+        return False
 
-        def process_hand(hand_data):
-            hand_index, hand = hand_data
-            landmark_list = hand["lmList"]
-            x_index, y_index = landmark_list[8][:2]
+    def check_key_pressed(self, mouse_x: int, mouse_y: int) -> str:
+        for i, row in enumerate(self.keys):
+            for j, key in enumerate(row):
+                x = self.start_x + j * self.key_width
+                y = self.start_y + i * self.key_height
+                w, h = self.key_width, self.key_height
 
-            distance, _, _ = self.detector.findDistance(landmark_list[8][:2], landmark_list[4][:2], None)
-            pressed_key = self.check_key_pressed(x_index, y_index)
-
-            if hand_index not in self.hand_states:
-                self.hand_states[hand_index] = False
-
-            if distance < 30 and pressed_key and not self.hand_states[hand_index]:
-                self.hand_states[hand_index] = True
-                return self.handle_key_press(pressed_key)
-
-            if distance >= 30:
-                self.hand_states[hand_index] = False
-
-            return False
-
-        # Parallelize the drawing of processing hands
-        indexed_hands = list(enumerate(hands))
-        results = list(self.executor.map(process_hand, indexed_hands))
-        return any(results)
+                # Check if the finger is within the key boundaries
+                if (x <= mouse_x <= x + w) and (y <= mouse_y <= y + h):
+                    if self.is_numeric_mode:
+                        return key[2]  # Return numeric key
+                    elif self.is_shift_mode and key[0] not in ('shift', 'space', 'backspace', 'enter'):
+                        return key[1]  # Return uppercase key
+                    else:
+                        return key[0]  # Return lowercase key
+        return ""
 
     def handle_key_press(self, pressed_key: str) -> bool:
         if pressed_key in ('123', 'ABC'):
@@ -113,20 +117,3 @@ class OnScreenKeyboard:
             self.controller.release(pressed_key)
         print(f"Pressed key: {pressed_key}")
         return True
-
-    def check_key_pressed(self, x_finger, y_finger) -> str:
-        for i, row in enumerate(self.keys):
-            for j, key in enumerate(row):
-                x = self.start_x + j * self.key_width
-                y = self.start_y + i * self.key_height
-                w, h = self.key_width, self.key_height
-
-                # Check if the finger is within the key boundaries
-                if (x <= x_finger <= x + w) and (y <= y_finger <= y + h):
-                    if self.is_numeric_mode:
-                        return key[2]  # Return numeric key
-                    elif self.is_shift_mode and key[0] not in ('shift', 'space', 'backspace', 'enter'):
-                        return key[1]  # Return uppercase key
-                    else:
-                        return key[0]  # Return lowercase key
-        return ""
