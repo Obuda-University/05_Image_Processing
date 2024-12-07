@@ -70,8 +70,8 @@ class Application:
     def _draw_camera_frame(self, frame: np.ndarray, camera_frame: np.ndarray) -> None:
         if camera_frame is not None:
             camera_height, camera_width, _ = camera_frame.shape
-            top_left = (self.screen_width - camera_width, self.screen_height - camera_height)
-            bottom_right = (self.screen_width, self.screen_height)
+            top_left = (self.screen_width - camera_width, self.screen_height - camera_height - 50)
+            bottom_right = (self.screen_width, self.screen_height - 50)
             frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = camera_frame
 
     def _camera(self) -> tuple[bool, np.ndarray]:
