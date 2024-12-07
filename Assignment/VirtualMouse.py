@@ -16,10 +16,10 @@ class Config:
 
 
 # Utils
-def _screen_coordinates(x, y, cam_width: int, cam_height: int) -> [int, int]:
+def _screen_coordinates(x, y, rect_x1, rect_x2, rect_y1, rect_y2) -> [int, int]:
     """Map camera coordinates to screen coordinates with frame reduction applied"""
-    x_screen = int(np.interp(x, (Config.FRAME_REDUCTION, cam_width - Config.FRAME_REDUCTION), (0, Config.SCREEN_WIDTH)))
-    y_screen = int(np.interp(y, (Config.FRAME_REDUCTION, cam_height - Config.FRAME_REDUCTION), (0, Config.SCREEN_HEIGHT)))
+    x_screen = int(np.interp(x, (rect_x1, rect_x2), (0, Config.SCREEN_WIDTH)))
+    y_screen = int(np.interp(y, (rect_y1, rect_y2), (0, Config.SCREEN_HEIGHT)))
     return x_screen, y_screen
 
 
@@ -102,6 +102,7 @@ class VirtualMouse:
         self._curr_location_x, self._curr_location_y = 0, 0
         self._last_click_time = 0
         self._click = _ClickHandler()
+        self.rect_coords = None
 
     def get_frame(self) -> [np.ndarray, None]:
         """Capture and flip the camera frame"""
@@ -115,13 +116,26 @@ class VirtualMouse:
         self.time_now = current_time
         return fps
 
-    def _move_mouse(self, index_finger: list[int, int], rect_coords: tuple) -> None:
+    def _move_mouse(self, index_finger: list[int, int]) -> None:
         """Move mouse cursor based on the index finger's position"""
-        x_screen, y_screen = _screen_coordinates(index_finger[0], index_finger[1], rect_coords[1], rect_coords[3])
-        self._curr_location_x = int(self._prev_location_x + (x_screen - self._prev_location_x) / Config.SMOOTHENING_RATIO)
-        self._curr_location_y = int(self._prev_location_y + (y_screen - self._prev_location_y) / Config.SMOOTHENING_RATIO)
-        ctypes.windll.user32.SetCursorPos(self._curr_location_x, self._curr_location_y)
-        self._prev_location_x, self._prev_location_y = self._curr_location_x, self._curr_location_y
+        if self.rect_coords is None:
+            return
+
+        x1, x2, y1, y2 = self.rect_coords
+        x, y = index_finger
+
+        # Check if index finger is within the rectangle
+        if x1 <= x <= x2 and y1 <= y <= y2:
+            x_screen, y_screen = _screen_coordinates(x, y, x1, x2, y1, y2)
+
+            # Smoothen mouse movement
+            self._curr_location_x = int(
+                self._prev_location_x + (x_screen - self._prev_location_x) / Config.SMOOTHENING_RATIO)
+            self._curr_location_y = int(
+                self._prev_location_y + (y_screen - self._prev_location_y) / Config.SMOOTHENING_RATIO)
+
+            ctypes.windll.user32.SetCursorPos(self._curr_location_x, self._curr_location_y)
+            self._prev_location_x, self._prev_location_y = self._curr_location_x, self._curr_location_y
 
     def _process_clicks(self, fingers: list[int]) -> None:
         """Process mouse clicks (single, double, hold) based on predefined gestures / states"""
@@ -132,8 +146,7 @@ class VirtualMouse:
             self._last_click_time = current_time
         self._click.process_thumb_gesture(thumb_up)
 
-    @staticmethod
-    def draw_rectangle(img: np.ndarray, cam_width: int, cam_height: int) -> tuple:
+    def draw_rectangle(self, img: np.ndarray, cam_width: int, cam_height: int) -> tuple:
         """Draw a smaller rectangle in the middle of the frame."""
         rect_width, rect_height = 240, 135
         x1 = (cam_width // 2) - (rect_width // 2)
@@ -141,7 +154,8 @@ class VirtualMouse:
         x2 = x1 + rect_width
         y2 = y1 + rect_height
         cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 2)
-        return x1, x2, y1, y2
+        self.rect_coords = (x1, x2, y1, y2)
+        return self.rect_coords
 
     def detect_hand(self, img: np.ndarray) -> None:
         """Detect hand(s) and control mouse based on gestures"""
@@ -156,10 +170,10 @@ class VirtualMouse:
             # if index is up and the rest is down, except the thumb [for click mode]
             move_mode: bool = fingers[1] == 1 and all(x == 0 for x in fingers[2:])
 
-            rect_coords = self.draw_rectangle(img, img.shape[1], img.shape[0])
+            self.draw_rectangle(img, img.shape[1], img.shape[0])
 
             if move_mode:
-                self._move_mouse(index, rect_coords)
+                self._move_mouse(index)
             self._process_clicks(fingers)
 
     def run(self) -> None:
