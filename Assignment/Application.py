@@ -26,7 +26,6 @@ class Application:
     def __init__(self) -> None:
         self.window_name: str = "Computer Vision Assignment"
         self.is_running: bool = True
-        self.last_mouse_state: bool = False
         self.hwnd: any = None
         self.screen_width: int = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)
         self.screen_height: int = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
@@ -126,27 +125,22 @@ class Application:
             # Create a transparent image
             frame: np.ndarray = np.zeros((self.screen_height, self.screen_width, 3), dtype=np.uint8)
             cv2.rectangle(frame, (0, 0), (self.screen_width - 1, self.screen_height - 1), (0, 0, 255), 2)
+            buttons: dict = self._draw_buttons(frame)
 
             success, camera_frame = self._camera()
             if success and camera_frame is not None:
                 self.camera.calc_frame_rate(camera_frame)
 
-                self.mouse.detect_hand(camera_frame)
+                clicked = self.mouse.detect_hand(camera_frame)
                 self._draw_camera_frame(frame, camera_frame)
+
+                mouse_x, mouse_y = win32api.GetCursorPos()
+                if clicked[0] is True:
+                    self._handle_click(mouse_x, mouse_y, buttons)
             else:
                 print("[ERROR]: Failed to read camera frame")
 
-            buttons: dict = self._draw_buttons(frame)
-
             cv2.imshow(self.window_name, frame)
-
-            mouse_x, mouse_y = win32api.GetCursorPos()
-            current_mouse_state: bool = win32api.GetAsyncKeyState(win32con.VK_LBUTTON) < 0  # true if button is pressed
-
-            if current_mouse_state and not self.last_mouse_state:  # Left Mouse Button
-                self._handle_click(mouse_x, mouse_y, buttons)
-
-            self.last_mouse_state = current_mouse_state
 
             key = cv2.waitKey(1) & 0xFF
             if key == 27:  # ESC key

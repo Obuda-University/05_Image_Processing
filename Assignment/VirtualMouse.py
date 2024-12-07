@@ -119,14 +119,16 @@ class VirtualMouse:
             ctypes.windll.user32.SetCursorPos(self._curr_location_x, self._curr_location_y)
             self._prev_location_x, self._prev_location_y = self._curr_location_x, self._curr_location_y
 
-    def _process_clicks(self, fingers: list[int]) -> None:
+    def _process_clicks(self, fingers: list[int]) -> bool:
         """Process mouse clicks (single, double, hold) based on predefined gestures / states"""
         thumb_up, index_up, middle_up = fingers[0], fingers[1], fingers[2]
         current_time = time.time()
         if index_up and middle_up and _is_cooldown_elapsed(self._last_click_time, Config.CLICK_COOLDOWN):
             self._click.double()
             self._last_click_time = current_time
+            return True
         self._click.process_thumb_gesture(thumb_up)
+        return False
 
     def draw_rectangle(self, img: np.ndarray, cam_width: int, cam_height: int) -> tuple:
         """Draw a smaller rectangle in the middle of the frame."""
@@ -139,7 +141,7 @@ class VirtualMouse:
         self.rect_coords = (x1, x2, y1, y2)
         return self.rect_coords
 
-    def detect_hand(self, img: np.ndarray) -> None:
+    def detect_hand(self, img: np.ndarray) -> [bool, float, float]:
         """Detect hand(s) and control mouse based on gestures"""
         hands, _ = self.detector.findHands(img, flipType=False)
         if hands:
@@ -156,4 +158,7 @@ class VirtualMouse:
 
             if move_mode:
                 self._move_mouse(index)
-            self._process_clicks(fingers)
+            clicked = self._process_clicks(fingers)
+
+            return clicked, fingers[0], fingers[1]
+        return False, 0.0, 0.0
