@@ -18,7 +18,7 @@ class DragAndDrop:
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, Config.CAMERA_WIDTH)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, Config.CAMERA_HEIGHT)
         self.detector = HandDetector(staticMode=False, modelComplexity=0, maxHands=2, detectionCon=0.8, minTrackCon=0.5)
-        self.cx, self.cy, self.w, self.h = 
+        self.cx, self.cy, self.w, self.h = 0, 0, 0, 0
 
     def get_frame(self) -> [np.ndarray, None]:
         """Capture and flip the camera frame"""
