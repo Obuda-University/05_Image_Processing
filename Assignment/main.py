@@ -30,7 +30,6 @@ class Application:
                     hands_future = executor.submit(self.hand_tracking.detect_hands, frame)
                     hands, processed_frame = hands_future.result()
 
-
                     if hands:
                         hand = hands[0]
                         landmark_list = hand["lmList"]

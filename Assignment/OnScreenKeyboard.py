@@ -1,8 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
-from Assignment.HandTracking import HandTracking
 from pynput.keyboard import Controller, Key
 import numpy as np
 import cv2
+import pyautogui
 
 
 class OnScreenKeyboard:
@@ -75,13 +75,13 @@ class OnScreenKeyboard:
 
     def key_press(self, mouse_x: int, mouse_y: int) -> bool:
         """Detect key press based on mouse click position"""
-        pressed_key = self.check_key_pressed(mouse_x, mouse_y)
+        pressed_key = self._check_key_pressed(mouse_x, mouse_y)
         if pressed_key:
-            self.handle_key_press(pressed_key)
+            self._handle_key_press(pressed_key)
             return True
         return False
 
-    def check_key_pressed(self, mouse_x: int, mouse_y: int) -> str:
+    def _check_key_pressed(self, mouse_x: int, mouse_y: int) -> str:
         for i, row in enumerate(self.keys):
             for j, key in enumerate(row):
                 x = self.start_x + j * self.key_width
@@ -98,7 +98,7 @@ class OnScreenKeyboard:
                         return key[0]  # Return lowercase key
         return ""
 
-    def handle_key_press(self, pressed_key: str) -> bool:
+    def _handle_key_press(self, pressed_key: str) -> bool:
         if pressed_key in ('123', 'ABC'):
             self.toggle_numeric()
         elif pressed_key == 'shift':
@@ -115,5 +115,4 @@ class OnScreenKeyboard:
         else:
             self.controller.press(pressed_key)
             self.controller.release(pressed_key)
-        print(f"Pressed key: {pressed_key}")
         return True
