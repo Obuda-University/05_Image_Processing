@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using Photoshop.ConsoleClient.Implementation;
 
 namespace Photoshop.ConsoleClient
 {

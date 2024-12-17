@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 
-namespace Photoshop.ConsoleClient
+namespace Photoshop.ConsoleClient.Implementation
 {
     public class GammaTransformation(double gamma) : ImageProcessor
     {
@@ -16,10 +16,10 @@ namespace Photoshop.ConsoleClient
                 {
                     Color original_color = image.GetPixel(x, y);
 
-                    int r = (int)(255 * Math.Pow(original_color.R / 255.0, this._gamma));
-                    int g = (int)(255 * Math.Pow(original_color.G / 255.0, this._gamma));
-                    int b = (int)(255 * Math.Pow(original_color.B / 255.0, this._gamma));
-                
+                    int r = (int)(255 * Math.Pow(original_color.R / 255.0, _gamma));
+                    int g = (int)(255 * Math.Pow(original_color.G / 255.0, _gamma));
+                    int b = (int)(255 * Math.Pow(original_color.B / 255.0, _gamma));
+
                     // 0~255
                     r = Math.Min(255, Math.Max(0, r));
                     g = Math.Min(255, Math.Max(0, g));

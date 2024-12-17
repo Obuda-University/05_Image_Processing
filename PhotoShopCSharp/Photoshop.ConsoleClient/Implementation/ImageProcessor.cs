@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 
-namespace Photoshop.ConsoleClient
+namespace Photoshop.ConsoleClient.Implementation
 {
     public abstract class ImageProcessor
     {
