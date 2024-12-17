@@ -2,9 +2,9 @@
 
 namespace Photoshop.ConsoleClient.Implementation
 {
-    public class GammaTransformation(double gamma = 1) : _ImageProcessor
+    public class LogarithmicTransformation(double c = 255) : _ImageProcessor
     {
-        private readonly double _gamma = gamma;
+        private readonly double _c = c;
 
         private protected override Bitmap Apply(Bitmap image)
         {
@@ -16,9 +16,9 @@ namespace Photoshop.ConsoleClient.Implementation
                 {
                     Color original_color = image.GetPixel(x, y);
 
-                    int r = (int)(255 * Math.Pow(original_color.R / 255.0, _gamma));
-                    int g = (int)(255 * Math.Pow(original_color.G / 255.0, _gamma));
-                    int b = (int)(255 * Math.Pow(original_color.B / 255.0, _gamma));
+                    int r = (int)(this._c * Math.Log(1 + original_color.R));
+                    int g = (int)(this._c * Math.Log(1 + original_color.G));
+                    int b = (int)(this._c * Math.Log(1 + original_color.B));
 
                     // 0~255
                     r = Math.Min(255, Math.Max(0, r));

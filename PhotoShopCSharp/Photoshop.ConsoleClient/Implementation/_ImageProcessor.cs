@@ -9,6 +9,6 @@ namespace Photoshop.ConsoleClient.Implementation
             return image == null ? throw new ArgumentNullException(nameof(image)) : Apply(image);
         }
 
-        private protected abstract Bitmap Apply(Bitmap bitmap);
+        private protected abstract Bitmap Apply(Bitmap image);
     }
 }

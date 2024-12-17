@@ -6,7 +6,7 @@ namespace Photoshop.ConsoleClient
     internal class Program
     {
         private const double GAMMA_VALUE = 2.6;  // Darker: >1, Brighter: <1, No change: =1
-        private const double C = 0.1;  // 0~255
+        private const double C = 10;  // 0~255
 
         static void Main(string[] args)
         {
@@ -16,6 +16,8 @@ namespace Photoshop.ConsoleClient
             Run(image_name, input_image, () => new Negate());
             // Gamma Transformation
             Run(image_name, input_image, () => new GammaTransformation(GAMMA_VALUE));
+            // Logarithmic Transformation
+            Run(image_name, input_image, () => new LogarithmicTransformation(C));
         }
 
         private static Bitmap ReadImage(string image_name)
