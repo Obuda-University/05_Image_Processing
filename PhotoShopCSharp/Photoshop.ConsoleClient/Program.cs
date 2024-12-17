@@ -7,6 +7,7 @@ namespace Photoshop.ConsoleClient
     {
         private const double GAMMA_VALUE = 2.6;  // Darker: >1, Brighter: <1, No change: =1
         private const double C = 10;  // 0~255
+        private const int KERNEL_SIZE = 3;  // 3, 4, 5
 
         static void Main(string[] args)
         {
@@ -20,6 +21,8 @@ namespace Photoshop.ConsoleClient
             Run(image_name, input_image, () => new LogarithmicTransformation(C));
             // GrayScale
             Run(image_name, input_image, () => new GrayScale());
+            // Mean Filter
+            Run(image_name, input_image, () => new MeanFilter(KERNEL_SIZE));
         }
 
         private static Bitmap ReadImage(string image_name)
