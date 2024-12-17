@@ -4,12 +4,17 @@ namespace Photoshop.ConsoleClient
 {
     internal class Program
     {
+        private const double GAMMA_VALUE = 2.6;  // Darker: >1, Brighter: <1, No change: =1
+        private const double C = 0.1;  // 0~255
+
         static void Main(string[] args)
         {
             string image_name = "oe.jpg";
             Bitmap input_image = ReadImage(image_name);
-
+            // Negate
             Run(image_name, input_image, () => new Negate());
+            // Gamma Transformation
+            Run(image_name, input_image, () => new GammaTransformation(GAMMA_VALUE));
         }
 
         private static Bitmap ReadImage(string image_name)
@@ -24,9 +29,9 @@ namespace Photoshop.ConsoleClient
         private static void Run<T>(string image_name, Bitmap image, Func<T> factory) where T : ImageProcessor
         {
             T processor = factory();
-
             Bitmap output_image = processor.Process(image);
-            string output_image_path = Path.Combine(AppContext.BaseDirectory, "Resources", "Output", image_name);
+            
+            string output_image_path = Path.Combine(AppContext.BaseDirectory, "Resources", "Output", processor.GetType().Name + "_" + image_name);
 
             string output_directory = Path.GetDirectoryName(output_image_path);
             if (!Directory.Exists(output_directory))
@@ -35,7 +40,7 @@ namespace Photoshop.ConsoleClient
             }
             output_image.Save(output_image_path);
 
-            Console.WriteLine($"Image processed with {processor.GetType().Name} and saved to: {output_image_path}");
+            Console.WriteLine($"Image processed with {processor.GetType().Name}");
         }
     }
 }
