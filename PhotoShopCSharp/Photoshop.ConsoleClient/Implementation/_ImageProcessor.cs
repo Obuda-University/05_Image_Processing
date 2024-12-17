@@ -2,7 +2,7 @@
 
 namespace Photoshop.ConsoleClient.Implementation
 {
-    public abstract class ImageProcessor
+    public abstract class _ImageProcessor
     {
         public Bitmap Process(Bitmap image)
         {

@@ -27,7 +27,7 @@ namespace Photoshop.ConsoleClient
             return result;
         }
 
-        private static void Run<T>(string image_name, Bitmap image, Func<T> factory) where T : ImageProcessor
+        private static void Run<T>(string image_name, Bitmap image, Func<T> factory) where T : _ImageProcessor
         {
             T processor = factory();
             Bitmap output_image = processor.Process(image);

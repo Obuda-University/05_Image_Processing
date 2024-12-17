@@ -2,7 +2,7 @@
 
 namespace Photoshop.ConsoleClient.Implementation
 {
-    public class Negate : ImageProcessor
+    public class Negate : _ImageProcessor
     {
         private protected override Bitmap Apply(Bitmap image)
         {

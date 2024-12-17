@@ -2,7 +2,7 @@
 
 namespace Photoshop.ConsoleClient.Implementation
 {
-    public class GammaTransformation(double gamma) : ImageProcessor
+    public class GammaTransformation(double gamma) : _ImageProcessor
     {
         private readonly double _gamma = gamma;
 
