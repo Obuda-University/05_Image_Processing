@@ -18,6 +18,8 @@ namespace Photoshop.ConsoleClient
             Run(image_name, input_image, () => new GammaTransformation(GAMMA_VALUE));
             // Logarithmic Transformation
             Run(image_name, input_image, () => new LogarithmicTransformation(C));
+            // GrayScale
+            Run(image_name, input_image, () => new GrayScale());
         }
 
         private static Bitmap ReadImage(string image_name)
