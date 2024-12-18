@@ -21,11 +21,13 @@ namespace Photoshop.ConsoleClient
             // Logarithmic Transformation
             Run(image_name, input_image, () => new LogarithmicTransformation(C));
             // GrayScale
-            Run(image_name, input_image, () => new GrayScale());
+            Bitmap grayscaled_image = Run_GetOutput(image_name, input_image, () => new GrayScale());
             // Mean Filter
             Run(image_name, input_image, () => new MeanFilter(KERNEL_SIZE));
             // Gauss Filter
             Run(image_name, input_image, () => new GaussFilter(KERNEL_SIZE, SIGMA));
+            // Sobel Edge Detection
+            Run(image_name, input_image, () => new SobelEdgeDetection(grayscaled_image));
         }
 
         private static Bitmap ReadImage(string image_name)
@@ -52,6 +54,24 @@ namespace Photoshop.ConsoleClient
             output_image.Save(output_image_path);
 
             Console.WriteLine($"Image processed with {processor.GetType().Name}");
+        }
+
+        private static Bitmap Run_GetOutput<T>(string image_name, Bitmap image, Func<T> factory) where T: _ImageProcessor
+        {
+            T processor = factory();
+            Bitmap output_image = processor.Process(image);
+
+            string output_image_path = Path.Combine(AppContext.BaseDirectory, "Resources", "Output", processor.GetType().Name + "_" + image_name);
+
+            string output_directory = Path.GetDirectoryName(output_image_path);
+            if (!Directory.Exists(output_directory))
+            {
+                Directory.CreateDirectory(output_directory);
+            }
+            output_image.Save(output_image_path);
+
+            Console.WriteLine($"Image processed with {processor.GetType().Name}");
+            return output_image;
         }
     }
 }
